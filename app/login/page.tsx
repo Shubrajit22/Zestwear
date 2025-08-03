@@ -40,7 +40,6 @@ const handleLogin = async (e: React.FormEvent) => {
     redirect: false,
     email,
     password,
-    callbackUrl: "/",
   });
 
   if (!res) {
@@ -56,9 +55,10 @@ const handleLogin = async (e: React.FormEvent) => {
   }
 
   toast.success("Logged in successfully");
-  router.replace(res.url || "/");
+  router.replace("/"); 
   setIsLoading(false);
 };
+
 
 
   const handleSendOtp = async () => {
