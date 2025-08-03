@@ -1,24 +1,35 @@
 'use client';
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 const SignUp = () => {
   const router = useRouter();
+  const params = useSearchParams();
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [mobile, setMobile] = useState(""); // New mobile state
+  const [mobile, setMobile] = useState("");
+  const [isOAuthFlow, setIsOAuthFlow] = useState(false);
+
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+
+  // Prefill email from query param if coming from OAuth
+  useEffect(() => {
+    const emailParam = params.get("email");
+    if (emailParam) {
+      setEmail(emailParam);
+      setIsOAuthFlow(true);
+    }
+  }, [params]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
-    // Ensure all fields are filled in
     if (!name || !email || !password || !mobile) {
       setError("Please fill in all required fields.");
       return;
@@ -30,13 +41,25 @@ const SignUp = () => {
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, password, mobile }), // Send mobile field
+        body: JSON.stringify({
+          name,
+          email,
+          password,
+          mobile,
+          fromOAuth: isOAuthFlow, // tell backend if it’s linking to OAuth account
+        }),
       });
 
       const data = await res.json();
 
       if (res.ok) {
-        router.push("/login");
+        // After signup, log them in
+        await signIn("credentials", {
+          email,
+          password,
+          redirect: true,
+          callbackUrl: "/",
+        });
       } else {
         setError(data?.error || "Signup failed. Please try again.");
       }
@@ -50,26 +73,28 @@ const SignUp = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-r from-black to-gray-800">
       <div className="max-w-lg w-full p-6 bg-black text-white rounded-md shadow-lg">
-        {/* Google and Apple Sign-In Buttons */}
-        <div className="flex flex-col gap-4 mb-6">
-          <button
-            className="w-full py-2 bg-red-600 text-white rounded-full"
-            disabled={isLoading}
-            onClick={() => signIn("google")}
-          >
-            Sign Up with Google
-          </button>
+        {!isOAuthFlow && (
+          <div className="flex flex-col gap-4 mb-6">
+            <button
+              className="w-full py-2 bg-red-600 text-white rounded-full"
+              disabled={isLoading}
+              onClick={() => signIn("google")}
+            >
+              Sign Up with Google
+            </button>
+            <button
+              className="w-full py-2 bg-gray-900 text-white rounded-full"
+              disabled={isLoading}
+              onClick={() => signIn("apple")}
+            >
+              Sign Up with Apple
+            </button>
+          </div>
+        )}
 
-          <button
-            className="w-full py-2 bg-gray-900 text-white rounded-full"
-            disabled={isLoading}
-            onClick={() => signIn("apple")}
-          >
-            Sign Up with Apple
-          </button>
-        </div>
-
-        <h1 className="text-2xl font-bold mb-6 text-center">Sign Up</h1>
+        <h1 className="text-2xl font-bold mb-6 text-center">
+          {isOAuthFlow ? "Complete Your Signup" : "Sign Up"}
+        </h1>
 
         {error && <div className="text-red-500 text-center mb-4">{error}</div>}
 
@@ -97,7 +122,7 @@ const SignUp = () => {
               className="w-full px-4 py-2 mt-1 border border-gray-600 rounded-md bg-black text-white"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              disabled={isLoading}
+              disabled={isOAuthFlow || isLoading}
               required
             />
           </div>
@@ -140,13 +165,14 @@ const SignUp = () => {
           </button>
         </form>
 
-        {/* Footer */}
-        <div className="mt-4 text-center">
-          <p className="text-sm">
-            Already have an account?{" "}
-            <a href="/login" className="text-blue-400 hover:underline">Login</a>
-          </p>
-        </div>
+        {!isOAuthFlow && (
+          <div className="mt-4 text-center">
+            <p className="text-sm">
+              Already have an account?{" "}
+              <a href="/login" className="text-blue-400 hover:underline">Login</a>
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );

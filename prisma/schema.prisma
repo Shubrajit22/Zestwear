@@ -4,7 +4,7 @@ datasource db {
 }
 
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
   binaryTargets = ["native", "rhel-openssl-3.0.x"]
 }
 
@@ -12,8 +12,8 @@ model User {
   id        String     @id @default(cuid())
   name      String
   email     String     @unique
-  password  String
-  mobile    String
+  password  String?
+  mobile    String?
   image     String?
   isAdmin   Boolean    @default(false)
   addresses Address[]
@@ -26,28 +26,66 @@ model User {
   // 🔐 OTP-based reset
   otp       String?
   otpExpiry DateTime?
+
+  // NextAuth relations
+  accounts  Account[]
+  sessions  Session[]
 }
 
+model Account {
+  id                 String  @id @default(cuid())
+  userId             String
+  type               String
+  provider           String
+  providerAccountId  String
+  refresh_token      String? 
+  access_token       String? 
+  expires_at         Int?    
+  token_type         String? 
+  scope              String? 
+  id_token           String? 
+  session_state      String? 
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
 
 model Order {
-  id                 String       @id @default(cuid())
-  userId             String
-  status             String
-  createdAt          DateTime     @default(now())
-  updatedAt          DateTime     @updatedAt
-  shippingAddress    String
-  totalAmount        Float
-  paymentStatus      String
-  shippingStatus     String
-  razorpay_order_id  String?      
+  id                  String       @id @default(cuid())
+  userId              String
+  status              String
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
+  shippingAddress     String
+  totalAmount         Float
+  paymentStatus       String
+  shippingStatus      String
+  razorpay_order_id   String?      
   razorpay_payment_id String?     
-  user               User         @relation(fields: [userId], references: [id])
-  orderItems         OrderItem[]
+  user                User         @relation(fields: [userId], references: [id])
+  orderItems          OrderItem[]
 }
 
-
 model OrderItem {
-  id         String     @id @default(cuid())
+  id         String      @id @default(cuid())
   name       String
   quantity   Int
   price      Float
@@ -55,8 +93,8 @@ model OrderItem {
   size       String?
   productId  String
   orderId    String
-  product    Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
-  order      Order      @relation(fields: [orderId], references: [id])
+  product    Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
+  order      Order       @relation(fields: [orderId], references: [id])
   sizeOption SizeOption? @relation(fields: [sizeId], references: [id])
 }
 
@@ -124,11 +162,11 @@ model StockImage {
 }
 
 model SizeOption {
-  id        String  @id @default(cuid())
-  size      String
-  price     Float
-  productId String
-  product   Product @relation(fields: [productId], references: [id])
+  id         String      @id @default(cuid())
+  size       String
+  price      Float
+  productId  String
+  product    Product     @relation(fields: [productId], references: [id])
   orderItems OrderItem[]
 }
 
