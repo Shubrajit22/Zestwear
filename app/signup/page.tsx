@@ -1,8 +1,9 @@
-'use client';
+"use client";
 
 import { useEffect, useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { FcGoogle } from "react-icons/fc";
 
 const SignUp = () => {
   const router = useRouter();
@@ -17,7 +18,6 @@ const SignUp = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // Prefill email from query param if coming from OAuth
   useEffect(() => {
     const emailParam = params.get("email");
     if (emailParam) {
@@ -46,14 +46,13 @@ const SignUp = () => {
           email,
           password,
           mobile,
-          fromOAuth: isOAuthFlow, // tell backend if it’s linking to OAuth account
+          fromOAuth: isOAuthFlow,
         }),
       });
 
       const data = await res.json();
 
       if (res.ok) {
-        // After signup, log them in
         await signIn("credentials", {
           email,
           password,
@@ -71,41 +70,41 @@ const SignUp = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-r from-black to-gray-800">
-      <div className="max-w-lg w-full p-6 bg-black text-white rounded-md shadow-lg">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 via-black to-gray-800 px-4">
+      <div className="w-full max-w-md p-8 bg-gray-900/60 backdrop-blur-lg text-white rounded-2xl shadow-2xl border border-gray-700">
+        
+        {/* Social Signup */}
         {!isOAuthFlow && (
-          <div className="flex flex-col gap-4 mb-6">
+          <div className="flex flex-col gap-3 mb-8">
             <button
-              className="w-full py-2 bg-red-600 text-white rounded-full"
+              className="flex items-center justify-center gap-3 w-full py-3 bg-white text-black font-medium rounded-lg shadow-md hover:shadow-lg transition-all"
               disabled={isLoading}
               onClick={() => signIn("google")}
             >
+              <FcGoogle size={22} />
               Sign Up with Google
-            </button>
-            <button
-              className="w-full py-2 bg-gray-900 text-white rounded-full"
-              disabled={isLoading}
-              onClick={() => signIn("apple")}
-            >
-              Sign Up with Apple
             </button>
           </div>
         )}
 
-        <h1 className="text-2xl font-bold mb-6 text-center">
+        <h1 className="text-3xl font-bold text-center mb-6">
           {isOAuthFlow ? "Complete Your Signup" : "Sign Up"}
         </h1>
 
-        {error && <div className="text-red-500 text-center mb-4">{error}</div>}
+        {error && (
+          <div className="text-red-500 text-center mb-4 text-sm bg-red-500/10 p-2 rounded-md border border-red-500/30">
+            {error}
+          </div>
+        )}
 
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} className="space-y-5">
           {/* Name */}
-          <div className="mb-4">
-            <label htmlFor="name" className="block text-sm font-medium">Name</label>
+          <div>
+            <label htmlFor="name" className="block text-sm text-gray-300">Name</label>
             <input
               id="name"
               type="text"
-              className="w-full px-4 py-2 mt-1 border border-gray-600 rounded-md bg-black text-white"
+              className="w-full px-4 py-2 mt-1 border border-gray-600 rounded-md bg-transparent text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
               value={name}
               onChange={(e) => setName(e.target.value)}
               disabled={isLoading}
@@ -114,12 +113,12 @@ const SignUp = () => {
           </div>
 
           {/* Email */}
-          <div className="mb-4">
-            <label htmlFor="email" className="block text-sm font-medium">Email</label>
+          <div>
+            <label htmlFor="email" className="block text-sm text-gray-300">Email</label>
             <input
               id="email"
               type="email"
-              className="w-full px-4 py-2 mt-1 border border-gray-600 rounded-md bg-black text-white"
+              className="w-full px-4 py-2 mt-1 border border-gray-600 rounded-md bg-transparent text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               disabled={isOAuthFlow || isLoading}
@@ -128,12 +127,12 @@ const SignUp = () => {
           </div>
 
           {/* Password */}
-          <div className="mb-4">
-            <label htmlFor="password" className="block text-sm font-medium">Password</label>
+          <div>
+            <label htmlFor="password" className="block text-sm text-gray-300">Password</label>
             <input
               id="password"
               type="password"
-              className="w-full px-4 py-2 mt-1 border border-gray-600 rounded-md bg-black text-white"
+              className="w-full px-4 py-2 mt-1 border border-gray-600 rounded-md bg-transparent text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               disabled={isLoading}
@@ -142,12 +141,12 @@ const SignUp = () => {
           </div>
 
           {/* Mobile */}
-          <div className="mb-4">
-            <label htmlFor="mobile" className="block text-sm font-medium">Mobile</label>
+          <div>
+            <label htmlFor="mobile" className="block text-sm text-gray-300">Mobile</label>
             <input
               id="mobile"
               type="text"
-              className="w-full px-4 py-2 mt-1 border border-gray-600 rounded-md bg-black text-white"
+              className="w-full px-4 py-2 mt-1 border border-gray-600 rounded-md bg-transparent text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
               value={mobile}
               onChange={(e) => setMobile(e.target.value)}
               disabled={isLoading}
@@ -158,7 +157,7 @@ const SignUp = () => {
           {/* Submit */}
           <button
             type="submit"
-            className="w-full py-2 bg-white text-black rounded-full mt-4"
+            className="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-medium transition-all"
             disabled={isLoading}
           >
             {isLoading ? "Signing up..." : "Sign Up"}
@@ -166,10 +165,12 @@ const SignUp = () => {
         </form>
 
         {!isOAuthFlow && (
-          <div className="mt-4 text-center">
-            <p className="text-sm">
+          <div className="mt-8 text-center">
+            <p className="text-sm text-gray-400">
               Already have an account?{" "}
-              <a href="/login" className="text-blue-400 hover:underline">Login</a>
+              <a href="/login" className="text-blue-400 hover:underline">
+                Login
+              </a>
             </p>
           </div>
         )}

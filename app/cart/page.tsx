@@ -197,7 +197,7 @@ const CartPage = () => {
       currency: 'INR',
       name: 'ZESTWARE',
       description: 'Order Payment',
-      image: '/logo.png',
+      image: '/home/logo.png',
       order_id: data.id,
       handler: function (response: RazorpayResponse) {
         handlePaymentSuccess(response);

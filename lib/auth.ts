@@ -2,7 +2,6 @@
 import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import { prisma } from "@/lib/prisma";
 import GoogleProvider from "next-auth/providers/google";
-import AppleProvider from "next-auth/providers/apple";
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { NextAuthOptions } from "next-auth";
@@ -21,10 +20,6 @@ export const authOptions: NextAuthOptions = {
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-    }),
-    AppleProvider({
-      clientId: process.env.APPLE_CLIENT_ID!,
-      clientSecret: process.env.APPLE_CLIENT_SECRET!,
     }),
     CredentialsProvider({
       name: "Credentials",
@@ -51,14 +46,13 @@ export const authOptions: NextAuthOptions = {
         }
 
         if (!user.password) {
-            throw new Error("Invalid credentials");
-          }
+          throw new Error("Invalid credentials");
+        }
 
-          const isValid = await bcrypt.compare(credentials.password, user.password);
-          if (!isValid) {
-            throw new Error("Invalid credentials");
-          }
-
+        const isValid = await bcrypt.compare(credentials.password, user.password);
+        if (!isValid) {
+          throw new Error("Invalid credentials");
+        }
 
         return {
           id: user.id,
@@ -72,14 +66,9 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
-    /**
-     * OAuth signIn handler:
-     * - If user exists → link account if needed
-     * - If not → redirect to signup page to collect required fields
-     */
     async signIn({ user, account }) {
-      if (account && (account.provider === "google" || account.provider === "apple")) {
-        if (!user.email) return false; // No email → block
+      if (account && account.provider === "google") {
+        if (!user.email) return false;
 
         const normalizedEmail = user.email.toLowerCase();
         const existingUser = await prisma.user.findUnique({
@@ -87,7 +76,6 @@ export const authOptions: NextAuthOptions = {
         });
 
         if (existingUser) {
-          // Link account if not already linked
           const existingAccount = await prisma.account.findFirst({
             where: {
               provider: account.provider,
@@ -116,12 +104,11 @@ export const authOptions: NextAuthOptions = {
           (user as any).id = existingUser.id;
           return true;
         } else {
-          // Redirect new OAuth users to signup to fill password & mobile
           return `/signup?email=${encodeURIComponent(user.email)}`;
         }
       }
 
-      return true; // Credentials login or other providers
+      return true;
     },
 
     async jwt({ token, user }) {
