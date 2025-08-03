@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { toast } from 'react-hot-toast';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
@@ -34,45 +34,46 @@ const CartPage = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const [user, setUser] = useState<{ name: string; email: string; mobile: string } | null>(null);
   const [selectedAddress, setSelectedAddress] = useState<string>('');
-
   const router = useRouter();
+  const fetchedOnce = useRef(false);
 
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const res = await fetch('/api/me');
-        const data = await res.json();
-        if (res.ok && data.user) {
-          setUser(data.user);
-        } else {
-          toast.error('User not logged in');
-        }
-      } catch {
-        toast.error('Could not get user info');
-      }
-    };
-    fetchUser();
-  }, []);
+useEffect(() => {
+  if (fetchedOnce.current) return; 
+  fetchedOnce.current = true;
 
-  useEffect(() => {
-    const fetchCartItems = async () => {
-      setLoading(true);
-      try {
-        const response = await fetch('/api/cart');
-        const data = await response.json();
-        if (response.ok && Array.isArray(data.cartItems)) {
-          setCartItems(data.cartItems);
-        } else {
-          toast.error(data.message || 'Error fetching cart items');
-        }
-      } catch {
-        toast.error('An error occurred while fetching cart items');
-      } finally {
-        setLoading(false);
+  const fetchUserAndCart = async () => {
+    try {
+      const res = await fetch('/api/me');
+      const data = await res.json();
+
+      if (res.ok && data.user) {
+        setUser(data.user);
+        await fetchCartItems();
+      } else {
+        toast.error('Please log in to view cart');
       }
-    };
-    fetchCartItems();
-  }, []);
+    } catch {
+      toast.error('Please log in to view cart');
+    }
+  };
+
+  fetchUserAndCart();
+}, []);
+
+
+
+const fetchCartItems = async () => {
+  setLoading(true);
+  try {
+    const res = await fetch('/api/cart');
+    const data = await res.json();
+    if (res.ok && Array.isArray(data.cartItems)) {
+      setCartItems(data.cartItems);
+    }
+  } finally {
+    setLoading(false);
+  }
+};
 
   useEffect(() => {
     const script = document.createElement('script');
@@ -97,14 +98,9 @@ const CartPage = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ itemId, newQuantity }),
       });
-      const data = await response.json();
       if (!response.ok) {
-        toast.error(data.message || 'Error updating cart');
-      } else {
-        toast.success('Cart updated successfully');
+        toast.error('Error updating cart');
       }
-    } catch {
-      toast.error('An error occurred while updating cart');
     } finally {
       setLoading(false);
     }
@@ -116,15 +112,9 @@ const CartPage = () => {
       const response = await fetch(`/api/cart?cartItemId=${itemId}`, {
         method: 'DELETE',
       });
-      const data = await response.json();
       if (response.ok) {
         setCartItems((prev) => prev.filter((item) => item.id !== itemId));
-        toast.success('Item removed from cart');
-      } else {
-        toast.error(data.message || 'Error removing item');
       }
-    } catch {
-      toast.error('An error occurred while removing item');
     } finally {
       setLoading(false);
     }
@@ -138,12 +128,11 @@ const CartPage = () => {
   };
 
   const handlePaymentSuccess = async (response: RazorpayResponse) => {
+    if (!selectedAddress) {
+      toast.error('Please select a shipping address.');
+      return;
+    }
     try {
-      if (!selectedAddress) {
-        toast.error('Please select a shipping address.');
-        return;
-      }
-
       const orderPayload = {
         razorpay_payment_id: response.razorpay_payment_id,
         razorpay_order_id: response.razorpay_order_id,
@@ -167,13 +156,10 @@ const CartPage = () => {
         body: JSON.stringify(orderPayload),
       });
 
-      const data = await res.json();
-
       if (res.ok) {
-        toast.success('✅ Order placed successfully!');
         router.push('/orders');
       } else {
-        toast.error(data.message || '❌ Order failed.');
+        toast.error('Order failed.');
       }
     } catch {
       toast.error('Something went wrong.');
@@ -199,9 +185,7 @@ const CartPage = () => {
       description: 'Order Payment',
       image: '/home/logo.png',
       order_id: data.id,
-      handler: function (response: RazorpayResponse) {
-        handlePaymentSuccess(response);
-      },
+      handler: handlePaymentSuccess,
       prefill: {
         name: user?.name || 'Customer',
         email: user?.email || '',
@@ -215,7 +199,6 @@ const CartPage = () => {
     const rzp = new window.Razorpay(options);
     rzp.open();
   };
-
 return (
   <div className="relative min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-800 text-white px-4 md:px-10 py-10 mt-10">
     <h1 className="text-5xl font-extrabold text-center mb-10  mt-10">
