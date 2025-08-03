@@ -1,0 +1,12 @@
+version: '3.8'
+services:
+  zestware:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: process.env.POSTGRES_URL
+    command: >
+      sh -c "npx prisma migrate deploy && npx ts-node prisma/seed.ts && npm start"

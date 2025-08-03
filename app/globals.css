@@ -1,0 +1,48 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+
+@import "tw-animate-css"; /* Make sure this exists and is installed */
+
+:root {
+  --gradient-start: #ffffff;
+  --gradient-end: #f0f0f0;
+  --radius: 0.625rem;
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.205 0 0);
+  --primary-foreground: oklch(0.985 0 0);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.708 0 0);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --gradient-start: #000000;
+    --gradient-end: #333333;
+  }
+}
+
+body {
+  background: linear-gradient(to bottom right, var(--gradient-start), var(--gradient-end));
+  transition: background 0.3s ease, color 0.3s ease;
+}
+
+@layer utilities {
+  .bg-black-gradient {
+    background: linear-gradient(to bottom right, #000000, #333333);
+  }
+
+  .bg-white-gradient {
+    background: linear-gradient(to bottom right, #ffffff, #f0f0f0);
+  }
+
+  .text-custom-foreground {
+    color: var(--foreground);
+  }
+}
