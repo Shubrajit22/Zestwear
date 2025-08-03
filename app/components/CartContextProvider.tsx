@@ -1,5 +1,5 @@
 'use client'
-// contexts/CartContext.tsx
+
 import { createContext, useContext, useState, ReactNode } from 'react';
 
 // Type definitions
