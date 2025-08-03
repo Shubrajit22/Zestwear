@@ -19,7 +19,7 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
 
   const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-
+  console.debug(session);
   useEffect(() => {
     if (status === "authenticated") {
       router.replace("/");

@@ -2,11 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { signIn } from "next-auth/react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { FcGoogle } from "react-icons/fc";
 
 const SignUp = () => {
-  const router = useRouter();
   const params = useSearchParams();
 
   const [name, setName] = useState("");
