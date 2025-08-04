@@ -1,36 +1,9 @@
 import { getUserOrders } from "@/lib/actions/getUserOrders";
 import { authOptions } from "@/lib/auth";
 import { getServerSession } from "next-auth";
-import React from "react";
 import Image from "next/image";
 import { getNumericOrderId } from "@/lib/utils";
-
-type Product = {
-  id: string;
-  name: string;
-  imageUrl: string;
-
-};
-
-type OrderItem = {
-  id: string;
-  quantity: number;
-  size: string | null;  
-  price: number;
-  product: Product;
-};
-
-type Order = {
-  id: string;
-  status: string;
-  paymentStatus: string;
-  shippingStatus: string;
-  totalAmount: number;
-  createdAt: string; 
-  updatedAt: string;
-  orderItems: OrderItem[];
-  razorpay_payment_id: string | null;
-};
+import CancelOrderButton from "../components/CancelOrderButton";
 
 export default async function OrdersPage() {
   const session = await getServerSession(authOptions);
@@ -46,7 +19,7 @@ export default async function OrdersPage() {
     );
   }
 
-  const orders: Order[] = await getUserOrders(userId);
+  const orders = await getUserOrders(userId);
 
   return (
     <div className="flex flex-col min-h-screen items-center px-4 py-8">
@@ -64,6 +37,7 @@ export default async function OrdersPage() {
                 key={order.id}
                 className="bg-white shadow-md border border-gray-200 rounded-lg p-6 transition hover:shadow-lg"
               >
+                {/* Order Header */}
                 <div className="mb-4">
                   <h2 className="text-lg font-semibold text-gray-800">
                     Order ID:{" "}
@@ -76,21 +50,7 @@ export default async function OrdersPage() {
                   </p>
                 </div>
 
-                <div className="flex flex-wrap gap-2 mb-4">
-                  <span className="px-3 py-1 text-sm rounded-full bg-blue-100 text-blue-700">
-                    Status: {order.status}
-                  </span>
-                  <span className="px-3 py-1 text-sm rounded-full bg-green-100 text-green-700">
-                    Payment: {order.paymentStatus}
-                  </span>
-                  <span className="px-3 py-1 text-sm rounded-full bg-yellow-100 text-yellow-700">
-                    Shipping: {order.shippingStatus}
-                  </span>
-                  <span className="ml-auto font-semibold text-lg text-gray-800">
-                    ₹{order.totalAmount}
-                  </span>
-                </div>
-
+                {/* Items */}
                 <div className="divide-y divide-gray-200">
                   {order.orderItems.map((item) => (
                     <div key={item.id} className="flex items-center gap-4 py-4">
@@ -113,6 +73,30 @@ export default async function OrdersPage() {
                       </div>
                     </div>
                   ))}
+                </div>
+
+                {/* Status Row with Cancel Button */}
+                <div className="flex flex-wrap items-center gap-3 mt-4">
+                  <span className="px-3 py-1 text-sm rounded-full bg-blue-100 text-blue-700">
+                    Status: {order.status}
+                  </span>
+                  <span className="px-3 py-1 text-sm rounded-full bg-green-100 text-green-700">
+                    Payment: {order.paymentStatus}
+                  </span>
+                  <span className="px-3 py-1 text-sm rounded-full bg-yellow-100 text-yellow-700">
+                    Shipping: {order.shippingStatus}
+                  </span>
+
+                  {/* Cancel Button inside Card */}
+                  {order.shippingStatus === "processing" &&
+                    order.status !== "cancelled" && (
+                      <CancelOrderButton orderId={order.id} />
+                    )}
+
+                  {/* Price at End */}
+                  <span className="ml-auto font-semibold text-lg text-gray-800">
+                    ₹{order.totalAmount}
+                  </span>
                 </div>
               </div>
             ))}

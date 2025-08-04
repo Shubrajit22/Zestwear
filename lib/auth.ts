@@ -5,12 +5,6 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { NextAuthOptions, User } from "next-auth";
 
-interface ExtendedUser extends User {
-  id: string;
-  mobile?: string;
-  isAdmin: boolean; // Always boolean in runtime
-}
-
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
   session: {

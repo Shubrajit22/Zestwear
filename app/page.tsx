@@ -1,25 +1,42 @@
 import HeroSection from "./components/HeroSection";
-import MostSelling from "./components/MostSelling";
+import MostSelling, { Product } from "./components/MostSelling";
 import { CategoryGrid } from './components/CategoryGrid';
 import Testimonials from "./components/Testimonials";
 import CustomizeCard from "./components/Customise";
 import ScrollAnimationWrapper from "./components/ScrollAnimationWrapper";
 import { prisma } from '@/lib/prisma';
-import { Product } from '@prisma/client';
 
 export default async function Home() {
   let mostSellingProducts: Product[] = [];
 
   try {
-    mostSellingProducts = await prisma.product.findMany({
+    const products = await prisma.product.findMany({
       orderBy: {
-        salesCount: 'desc',
+        reviews: {
+          _count: 'desc', // sort by most reviewed first
+        },
       },
       take: 6,
+      include: { reviews: true },
     });
+
+    mostSellingProducts = products.map((p) => ({
+      id: p.id,
+      name: p.name,
+      imageUrl: p.imageUrl,
+      mrpPrice: p.mrpPrice,
+      price: p.price,
+      rating:
+        p.reviews.length > 0
+          ? p.reviews.reduce((sum, r) => sum + (r.rating || 0), 0) /
+            p.reviews.length
+          : null,
+      reviewCount: p.reviews.length,
+    }));
   } catch (error) {
-    console.error("Error fetching most selling products:", error);
+    console.error("Error fetching most reviewed products:", error);
   }
+
   return (
     <>
       <main className="text-white relative">
@@ -50,7 +67,7 @@ export default async function Home() {
         </section>
       </ScrollAnimationWrapper>
 
-      {/* Most Selling */}
+      {/* Most Reviewed */}
       <ScrollAnimationWrapper delay={0.4}>
         <section>
           <MostSelling products={mostSellingProducts} />

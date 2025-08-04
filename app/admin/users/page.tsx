@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState, useMemo } from "react";
-import { Save } from "lucide-react";
+import { Save, X } from "lucide-react";
 
 type User = {
   id: string;
@@ -13,8 +13,12 @@ type User = {
 
 export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([]);
-  const [editingUser, setEditingUser] = useState<Record<string, Partial<User>>>({});
+  const [editingUser, setEditingUser] = useState<Record<string, Partial<User>>>(
+    {}
+  );
   const [savingIds, setSavingIds] = useState<Set<string>>(new Set());
+  const [query, setQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
 
   useEffect(() => {
     fetch("/api/admin/users")
@@ -24,6 +28,14 @@ export default function UsersPage() {
         // handle fetch error if needed
       });
   }, []);
+
+  // debounce the search input
+  useEffect(() => {
+    const id = setTimeout(() => {
+      setDebouncedQuery(query.trim().toLowerCase());
+    }, 250);
+    return () => clearTimeout(id);
+  }, [query]);
 
   const handleChange = (id: string, field: keyof User, value: string | boolean) => {
     setEditingUser((prev) => ({
@@ -35,16 +47,14 @@ export default function UsersPage() {
     }));
   };
 
-const hasChanges = (id: string) => {
-  const original = users.find((u) => u.id === id);
-  const edited = editingUser[id];
-  if (!edited || !original) return false;
-
-  return Object.entries(edited).some(([k, v]) => {
-    return original[k as keyof User] !== v;
-  });
-};
-
+  const hasChanges = (id: string) => {
+    const original = users.find((u) => u.id === id);
+    const edited = editingUser[id];
+    if (!edited || !original) return false;
+    return Object.entries(edited).some(([k, v]) => {
+      return original[k as keyof User] !== v;
+    });
+  };
 
   const handleSave = async (id: string) => {
     if (!hasChanges(id)) return;
@@ -64,14 +74,15 @@ const hasChanges = (id: string) => {
         body: JSON.stringify(payload),
       });
       if (res.ok) {
-        setUsers((prev) => prev.map((u) => (u.id === id ? (payload as User) : u)));
+        setUsers((prev) =>
+          prev.map((u) => (u.id === id ? (payload as User) : u))
+        );
         setEditingUser((prev) => {
           const copy = { ...prev };
           delete copy[id];
           return copy;
         });
       } else {
-        // handle failure
         console.error("Failed to update user");
       }
     } catch (e) {
@@ -85,7 +96,7 @@ const hasChanges = (id: string) => {
     }
   };
 
-  // derived combined list for easy access
+  // merge edits on top of original
   const mergedUsers = useMemo(() => {
     return users.map((u) => ({
       ...u,
@@ -93,27 +104,75 @@ const hasChanges = (id: string) => {
     }));
   }, [users, editingUser]);
 
+  // filtered by search query
+  const filteredUsers = useMemo(() => {
+    if (!debouncedQuery) return mergedUsers;
+    return mergedUsers.filter((u) => {
+      return (
+        u.name.toLowerCase().includes(debouncedQuery) ||
+        u.email.toLowerCase().includes(debouncedQuery) ||
+        u.mobile.toLowerCase().includes(debouncedQuery)
+      );
+    });
+  }, [mergedUsers, debouncedQuery]);
+
+  const clearSearch = () => setQuery("");
+
   return (
     <div className="p-6 min-h-screen bg-gray-50 mt-20">
       <div className="max-w-[1200px] mx-auto">
-        <h2 className="text-3xl font-bold mb-6">Manage Users</h2>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+          <h2 className="text-3xl font-bold">Manage Users</h2>
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <div className="relative w-full sm:w-[300px]">
+              <input
+                aria-label="Search users"
+                placeholder="Search by name, email, mobile"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                className="w-full border rounded px-3 py-2 pr-10 text-sm focus:ring-1 focus:ring-blue-500"
+              />
+              {query && (
+                <button
+                  aria-label="Clear search"
+                  onClick={clearSearch}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1"
+                >
+                  <X size={16} />
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
 
         {/* Desktop Table */}
         <div className="hidden md:block overflow-x-auto rounded-lg shadow border border-gray-200 bg-white">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-white">
               <tr>
-                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Name</th>
-                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Email</th>
-                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Mobile</th>
-                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Role</th>
-                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Joined</th>
-                <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700">Action</th>
+                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
+                  Name
+                </th>
+                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
+                  Email
+                </th>
+                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
+                  Mobile
+                </th>
+                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
+                  Role
+                </th>
+                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
+                  Joined
+                </th>
+                <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700">
+                  Action
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 bg-white">
-              {users.map((user) => {
-                const edited: User = mergedUsers.find((u) => u.id === user.id) as User;
+              {filteredUsers.map((user) => {
+                const edited: User = user as User;
                 const dirty = hasChanges(user.id);
                 return (
                   <tr
@@ -124,21 +183,27 @@ const hasChanges = (id: string) => {
                       <input
                         className="w-full border rounded px-2 py-1 text-sm text-gray-900 focus:ring-1 focus:ring-blue-500"
                         value={edited.name}
-                        onChange={(e) => handleChange(user.id, "name", e.target.value)}
+                        onChange={(e) =>
+                          handleChange(user.id, "name", e.target.value)
+                        }
                       />
                     </td>
                     <td className="px-4 py-3">
                       <input
                         className="w-full border rounded px-2 py-1 text-sm text-gray-900 focus:ring-1 focus:ring-blue-500"
                         value={edited.email}
-                        onChange={(e) => handleChange(user.id, "email", e.target.value)}
+                        onChange={(e) =>
+                          handleChange(user.id, "email", e.target.value)
+                        }
                       />
                     </td>
                     <td className="px-4 py-3">
                       <input
                         className="w-full border rounded px-2 py-1 text-sm text-gray-900 focus:ring-1 focus:ring-blue-500"
                         value={edited.mobile}
-                        onChange={(e) => handleChange(user.id, "mobile", e.target.value)}
+                        onChange={(e) =>
+                          handleChange(user.id, "mobile", e.target.value)
+                        }
                       />
                     </td>
                     <td className="px-4 py-3">
@@ -146,7 +211,9 @@ const hasChanges = (id: string) => {
                         <input
                           type="checkbox"
                           checked={edited.isAdmin}
-                          onChange={(e) => handleChange(user.id, "isAdmin", e.target.checked)}
+                          onChange={(e) =>
+                            handleChange(user.id, "isAdmin", e.target.checked)
+                          }
                           className="h-4 w-4 rounded border-gray-300"
                         />
                         <span>{edited.isAdmin ? "Admin" : "Customer"}</span>
@@ -176,14 +243,21 @@ const hasChanges = (id: string) => {
                   </tr>
                 );
               })}
+              {filteredUsers.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="px-4 py-6 text-center text-sm text-gray-500">
+                    No users match your search.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
 
         {/* Mobile Card List */}
         <div className="md:hidden flex flex-col gap-4">
-          {users.map((user) => {
-            const edited: User = mergedUsers.find((u) => u.id === user.id) as User;
+          {filteredUsers.map((user) => {
+            const edited: User = user as User;
             const dirty = hasChanges(user.id);
             return (
               <div
@@ -199,7 +273,9 @@ const hasChanges = (id: string) => {
                       <input
                         className="w-full border rounded px-2 py-1 text-sm text-gray-900 focus:ring-1 focus:ring-blue-500"
                         value={edited.name}
-                        onChange={(e) => handleChange(user.id, "name", e.target.value)}
+                        onChange={(e) =>
+                          handleChange(user.id, "name", e.target.value)
+                        }
                       />
                     </div>
                     <div>
@@ -209,7 +285,9 @@ const hasChanges = (id: string) => {
                       <input
                         className="w-full border rounded px-2 py-1 text-sm text-gray-900 focus:ring-1 focus:ring-blue-500"
                         value={edited.email}
-                        onChange={(e) => handleChange(user.id, "email", e.target.value)}
+                        onChange={(e) =>
+                          handleChange(user.id, "email", e.target.value)
+                        }
                       />
                     </div>
                     <div>
@@ -219,7 +297,9 @@ const hasChanges = (id: string) => {
                       <input
                         className="w-full border rounded px-2 py-1 text-sm text-gray-900 focus:ring-1 focus:ring-blue-500"
                         value={edited.mobile}
-                        onChange={(e) => handleChange(user.id, "mobile", e.target.value)}
+                        onChange={(e) =>
+                          handleChange(user.id, "mobile", e.target.value)
+                        }
                       />
                     </div>
                   </div>
@@ -272,6 +352,11 @@ const hasChanges = (id: string) => {
               </div>
             );
           })}
+          {filteredUsers.length === 0 && (
+            <div className="text-center text-sm text-gray-500">
+              No users match your search.
+            </div>
+          )}
         </div>
       </div>
     </div>

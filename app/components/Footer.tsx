@@ -37,7 +37,7 @@ export default function Footer() {
               </li>
               <li>
                 <Link href="/orders" className="hover:text-yellow-500">
-                  Track Order
+                  Your Orders
                 </Link>
               </li>
             </ul>
