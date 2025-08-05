@@ -149,6 +149,7 @@ const calculateTotal = () => {
 };
 
 
+
   const handlePaymentSuccess = async (response: RazorpayResponse) => {
     if (!selectedAddress) {
       toast.error('Please select a shipping address.');
@@ -158,21 +159,30 @@ const calculateTotal = () => {
     setProcessingPayment(true); // Show loader immediately
 
     const orderPayload = {
-      razorpay_payment_id: response.razorpay_payment_id,
-      razorpay_order_id: response.razorpay_order_id,
-      email: user?.email,
-      name: user?.name,
-      amount: calculateTotal(),
-      address: selectedAddress,
-      items: cartItems.map((item) => ({
-        name: item.product.name,
-        quantity: item.quantity,
-        price: item.price,
-        size: item.size,
-        productId: item.product.id,
-        sizeId: item.sizeId || null,
-      })),
+  razorpay_payment_id: response.razorpay_payment_id,
+  razorpay_order_id: response.razorpay_order_id,
+  email: user?.email,
+  name: user?.name,
+  amount: calculateTotal(),
+  address: selectedAddress,
+  items: cartItems.map((item) => {
+    const finalPrice =
+      item.price ??
+      item.product.sizeOptions.find((s) => s.size === item.size)?.price ??
+      item.product.price ??
+      0;
+
+    return {
+      name: item.product.name,
+      quantity: item.quantity,
+      price: finalPrice,
+      size: item.size,
+      productId: item.product.id,
+      sizeId: item.sizeId || null,
     };
+  }),
+};
+
 
     try {
       const res = await fetch('/api/order', {
@@ -269,7 +279,7 @@ const calculateTotal = () => {
                 Clear Cart
               </button>
             )}
-            <button onClick={onClose}>
+            <button onClick={onClose} className='cursor-pointer'>
               <MdClose size={24} />
             </button>
           </div>
@@ -361,7 +371,7 @@ const calculateTotal = () => {
 
               <button
                 onClick={handleRazorpayPayment}
-                className="w-full mt-4 bg-black text-white py-3 rounded hover:bg-gray-800"
+                className="w-full mt-4 bg-black text-white py-3 rounded hover:bg-gray-800 cursor-pointer"
               >
                 Pay Now – ₹{(calculateTotal() || 0).toFixed(2)}
               </button>
