@@ -1,5 +1,6 @@
 'use client';
 export const dynamic = "force-dynamic";
+
 import { useEffect, useState, useRef } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
@@ -23,6 +24,7 @@ interface CartItem {
   };
   quantity: number;
   size: string;
+  price: number; // Price saved when item added to cart
   sizeId?: string | null;
 }
 
@@ -134,63 +136,70 @@ const SlidingCart = ({ isOpen, onClose }: SlidingCartProps) => {
     }
   };
 
-  // Calculate total price
-  const calculateTotal = () => {
-    return cartItems.reduce((total, item) => total + item.product.price * item.quantity, 0);
-  };
-
-  const handlePaymentSuccess = async (response: RazorpayResponse) => {
-  if (!selectedAddress) {
-    toast.error('Please select a shipping address.');
-    return;
-  }
-
-  setProcessingPayment(true); // Show loader immediately
-
-  const orderPayload = {
-    razorpay_payment_id: response.razorpay_payment_id,
-    razorpay_order_id: response.razorpay_order_id,
-    email: user?.email,
-    name: user?.name,
-    amount: calculateTotal(),
-    address: selectedAddress,
-    items: cartItems.map((item) => ({
-      name: item.product.name,
-      quantity: item.quantity,
-      price: item.product.price,
-      size: item.size,
-      productId: item.product.id,
-      sizeId: item.sizeId || null,
-    })),
-  };
-
-  try {
-    const res = await fetch('/api/order', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(orderPayload),
-    });
-
-    if (res.ok) {
-      clearCart(); // Clear context state
-      setCartItems([]); // Clear local state
-
-      // Wait briefly so loader is visible
-      setTimeout(() => {
-        setProcessingPayment(false);
-        onClose(); // Close the cart UI
-        router.push('/orders');
-      }, 1500);
-    } else {
-      toast.error('Order failed.');
-      setProcessingPayment(false);
-    }
-  } catch {
-    toast.error('Something went wrong.');
-    setProcessingPayment(false);
-  }
+  // Calculate total price using CartItem.price
+const calculateTotal = () => {
+  return cartItems.reduce((total, item) => {
+    const price =
+      item.price ??
+      item.product.sizeOptions.find((s) => s.size === item.size)?.price ??
+      item.product.price ??
+      0;
+    return total + price * item.quantity;
+  }, 0);
 };
 
+
+  const handlePaymentSuccess = async (response: RazorpayResponse) => {
+    if (!selectedAddress) {
+      toast.error('Please select a shipping address.');
+      return;
+    }
+
+    setProcessingPayment(true); // Show loader immediately
+
+    const orderPayload = {
+      razorpay_payment_id: response.razorpay_payment_id,
+      razorpay_order_id: response.razorpay_order_id,
+      email: user?.email,
+      name: user?.name,
+      amount: calculateTotal(),
+      address: selectedAddress,
+      items: cartItems.map((item) => ({
+        name: item.product.name,
+        quantity: item.quantity,
+        price: item.price,
+        size: item.size,
+        productId: item.product.id,
+        sizeId: item.sizeId || null,
+      })),
+    };
+
+    try {
+      const res = await fetch('/api/order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(orderPayload),
+      });
+
+      if (res.ok) {
+        clearCart(); // Clear context state
+        setCartItems([]); // Clear local state
+
+        // Wait briefly so loader is visible
+        setTimeout(() => {
+          setProcessingPayment(false);
+          onClose(); // Close the cart UI
+          router.push('/orders');
+        }, 1500);
+      } else {
+        toast.error('Order failed.');
+        setProcessingPayment(false);
+      }
+    } catch {
+      toast.error('Something went wrong.');
+      setProcessingPayment(false);
+    }
+  };
 
   // Start Razorpay payment
   const handleRazorpayPayment = async () => {
@@ -238,9 +247,32 @@ const SlidingCart = ({ isOpen, onClose }: SlidingCartProps) => {
         {/* Header */}
         <div className="flex justify-between items-center p-4 border-b">
           <h2 className="text-lg sm:text-xl font-semibold">Your Cart</h2>
-          <button onClick={onClose}>
-            <MdClose size={24} />
-          </button>
+          <div className="flex items-center gap-3">
+            {cartItems.length > 0 && (
+              <button
+                onClick={async () => {
+                  try {
+                    const res = await fetch('/api/cart', { method: 'DELETE' });
+                    if (res.ok) {
+                      clearCart(); // clears local context
+                      setCartItems([]); // clears local state
+                      toast.success('Cart cleared successfully.');
+                    } else {
+                      toast.error('Failed to clear cart.');
+                    }
+                  } catch {
+                    toast.error('Failed to clear cart.');
+                  }
+                }}
+                className="hover:cursor-pointer px-3 py-1 text-xs font-semibold text-white bg-gradient-to-r from-red-500 to-red-600 rounded-full shadow-md hover:from-red-600 hover:to-red-700 hover:shadow-lg transition-all duration-300"
+              >
+                Clear Cart
+              </button>
+            )}
+            <button onClick={onClose}>
+              <MdClose size={24} />
+            </button>
+          </div>
         </div>
 
         {/* Cart Content */}
@@ -279,7 +311,18 @@ const SlidingCart = ({ isOpen, onClose }: SlidingCartProps) => {
                     {/* Size, Price, Quantity */}
                     <div className="flex flex-wrap items-center justify-between mt-2 text-xs gap-y-1">
                       <p>Size: <span className="font-medium">{item.size}</span></p>
-                      <p>Price: <span className="font-medium">₹{item.product.price.toFixed(2)}</span></p>
+                      <p>
+  Price: 
+  <span className="font-medium">
+    ₹{(
+      item.price ??
+      item.product.sizeOptions.find((s) => s.size === item.size)?.price ??
+      item.product.price ??
+      0
+    ).toFixed(2)}
+  </span>
+</p>
+
 
                       <div className="flex items-center gap-2">
                         <button
@@ -302,8 +345,11 @@ const SlidingCart = ({ isOpen, onClose }: SlidingCartProps) => {
                 </div>
               ))}
 
+              {/* Total Price */}
               <div className="mt-4">
-                <h3 className="font-semibold text-lg">Total: ₹{calculateTotal().toFixed(2)}</h3>
+                <h3 className="font-semibold text-lg">
+                  Total: ₹{(calculateTotal() || 0).toFixed(2)}
+                </h3>
               </div>
 
               <textarea
@@ -317,7 +363,7 @@ const SlidingCart = ({ isOpen, onClose }: SlidingCartProps) => {
                 onClick={handleRazorpayPayment}
                 className="w-full mt-4 bg-black text-white py-3 rounded hover:bg-gray-800"
               >
-                Pay Now – ₹{calculateTotal().toFixed(2)}
+                Pay Now – ₹{(calculateTotal() || 0).toFixed(2)}
               </button>
             </>
           )}
