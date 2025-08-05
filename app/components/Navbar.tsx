@@ -7,41 +7,20 @@ import { FaUserAlt } from 'react-icons/fa';
 import { MdShoppingCart, MdMoreVert } from 'react-icons/md';
 import { useEffect, useState, useRef } from 'react';
 import SearchBarWithResults from './search';
+import SlidingCart from './Slidingcart';
+import { useCart } from './CartContextProvider';
 
 export default function Navbar() {
   const router = useRouter();
   const { data: session } = useSession();
-  const [cartCount, setCartCount] = useState(0);
   const [isMenuOpen, setMenuOpen] = useState(false);
   const [isProfileOpen, setProfileOpen] = useState(false);
-  const [loadingCart, setLoadingCart] = useState(true);
-  const [cartError, setCartError] = useState<string | null>(null);
-
   const profileRef = useRef<HTMLDivElement | null>(null);
   const menuRef = useRef<HTMLDivElement | null>(null);
+  const [isCartOpen, setIsCartOpen] = useState(false);
 
-  useEffect(() => {
-    const fetchCartCount = async () => {
-      setLoadingCart(true);
-      setCartError(null);
-      if (session?.user) {
-        try {
-          const res = await fetch(`/api/cart?userId=${session.user.id}`);
-          if (!res.ok) throw new Error('Failed to fetch cart data');
-          const data = await res.json();
-          setCartCount(data.cartItems.length);
-        } catch (error) {
-          console.error('Error fetching cart:', error);
-          setCartError('Failed to load cart items');
-        }
-      } else {
-        const cartData = JSON.parse(localStorage.getItem('cart') || '[]');
-        setCartCount(Array.isArray(cartData) ? cartData.length : 0);
-      }
-      setLoadingCart(false);
-    };
-    fetchCartCount();
-  }, [session]);
+  // ✅ Get cart state and clearCart from context
+  const { cartCount, clearCart } = useCart();
 
   const handleProfileClick = () => {
     setProfileOpen((o) => !o);
@@ -57,6 +36,7 @@ export default function Navbar() {
   const handleLogout = async () => {
     try {
       await signOut();
+      clearCart(); // Clear cart on logout
       window.location.href = '/';
     } catch (error) {
       console.error('Logout failed:', error);
@@ -64,7 +44,7 @@ export default function Navbar() {
     setProfileOpen(false);
   };
 
-  // click outside handler
+  // Click outside handler
   useEffect(() => {
     const handleOutside = (e: MouseEvent | TouchEvent) => {
       const target = e.target as Node;
@@ -170,21 +150,18 @@ export default function Navbar() {
           )}
         </div>
 
-        {/* Cart */}
-        <div className="relative cursor-pointer" onClick={() => router.push('/cart')}>
+        {/* Cart Icon */}
+        <div className="relative cursor-pointer" onClick={() => setIsCartOpen(true)}>
           <MdShoppingCart size={26} className="hover:text-yellow-400" />
-          {loadingCart ? (
-            <span className="absolute -top-2 -right-2 text-xs bg-red-600 text-white rounded-full px-1">...</span>
-          ) : cartCount > 0 ? (
+          {cartCount > 0 && (
             <span className="absolute -top-2 -right-2 text-xs bg-red-600 text-white rounded-full px-1">
               {cartCount}
             </span>
-          ) : cartError ? (
-            <span className="absolute -top-2 -right-2 text-xs bg-red-600 text-white rounded-full px-1">
-              Error
-            </span>
-          ) : null}
+          )}
         </div>
+
+        {/* Sliding Cart */}
+        <SlidingCart isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
 
         {/* Mobile Menu Icon */}
         <div ref={menuRef} className="relative">
@@ -196,43 +173,41 @@ export default function Navbar() {
               setProfileOpen(false);
             }}
           />
+          {isMenuOpen && (
+            <div className="fixed top-16 inset-x-0 flex justify-center z-50 md:hidden">
+              <div className="bg-black text-white p-4 rounded-lg shadow-lg border border-gray-600 w-[90vw] max-w-sm flex flex-col items-center ">
+                <Link
+                  href="/"
+                  className="block py-2 hover:text-yellow-400 w-full"
+                  onClick={() => setMenuOpen(false)}
+                >
+                  Home
+                </Link>
+                <Link
+                  href="/contact"
+                  className="block py-2 hover:text-yellow-400 w-full"
+                  onClick={() => setMenuOpen(false)}
+                >
+                  Contact
+                </Link>
+                <Link
+                  href="/about"
+                  className="block py-2 hover:text-yellow-400 w-full"
+                  onClick={() => setMenuOpen(false)}
+                >
+                  About
+                </Link>
 
-          {/* Mobile Menu */}
-{isMenuOpen && (
-  <div className="fixed top-16 inset-x-0 flex justify-center z-50 md:hidden">
-    <div className="bg-black text-white p-4 rounded-lg shadow-lg border border-gray-600 w-[90vw] max-w-sm flex flex-col items-center ">
-      <Link
-        href="/"
-        className="block py-2 hover:text-yellow-400 w-full"
-        onClick={() => setMenuOpen(false)}
-      >
-        Home
-      </Link>
-      <Link
-        href="/contact"
-        className="block py-2 hover:text-yellow-400 w-full"
-        onClick={() => setMenuOpen(false)}
-      >
-        Contact
-      </Link>
-      <Link
-        href="/about"
-        className="block py-2 hover:text-yellow-400 w-full"
-        onClick={() => setMenuOpen(false)}
-      >
-        About
-      </Link>
-
-      <div className="mt-4 w-full flex justify-center">
-        <div className="flex items-center bg-white rounded-full px-2 py-1 shadow-inner w-full max-w-xs">
-          <SearchBarWithResults />
-        </div>
-      </div>
-    </div>
-  </div>
-)}
-
+                <div className="mt-4 w-full flex justify-center">
+                  <div className="flex items-center bg-white rounded-full px-2 py-1 shadow-inner w-full max-w-xs">
+                    <SearchBarWithResults />
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </nav>
-  )}
+  );
+}

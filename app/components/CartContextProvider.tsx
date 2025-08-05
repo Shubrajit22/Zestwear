@@ -1,59 +1,113 @@
-'use client'
+'use client';
+export const dynamic = 'force-dynamic';
+import { createContext, useContext, useState, useEffect } from 'react';
 
-import { createContext, useContext, useState, ReactNode } from 'react';
-
-// Type definitions
 interface CartItem {
   id: string;
-  name: string;
-  price: number;
-  imageUrl: string;
+  product: {
+    id: string;
+    name: string;
+    price: number;
+    imageUrl: string;
+    description: string;
+    sizeOptions: {
+      id: string;
+      size: string;
+      price: number;
+    }[];
+  };
   quantity: number;
+  size: string;
+  sizeId?: string | null;
 }
 
 interface CartContextType {
-  cartItems: CartItem[];
+  items: CartItem[];
+  isOpen: boolean;
+  cartCount: number;
+  openCart: () => void;
+  closeCart: () => void;
   addToCart: (item: CartItem) => void;
-  removeFromCart: (id: string) => void;
+  removeFromCart: (productId: string, sizeId: string) => void;
+  clearCart: () => void; // ✅ Added
 }
 
-// Create Context
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
-// CartContextProvider
-export const CartContextProvider = ({ children }: { children: ReactNode }) => {
-  const [cartItems, setCartItems] = useState<CartItem[]>([]);
+export const CartContextProvider = ({ children }: { children: React.ReactNode }) => {
+  const [items, setItems] = useState<CartItem[]>([]);
+  const [isOpen, setIsOpen] = useState(false);
 
-  const addToCart = (item: CartItem) => {
-    setCartItems((prev) => {
-      const existingItem = prev.find((i) => i.id === item.id);
-      if (existingItem) {
-        return prev.map((i) =>
-          i.id === item.id
-            ? { ...i, quantity: i.quantity + item.quantity }
-            : i
-        );
+  const cartCount = items.reduce((sum, item) => sum + item.quantity, 0);
+
+  // Load cart from localStorage on mount
+  useEffect(() => {
+    const storedCart = localStorage.getItem('cart');
+    if (storedCart) {
+      setItems(JSON.parse(storedCart));
+    }
+  }, []);
+
+  // Save cart to localStorage whenever items change
+  useEffect(() => {
+    localStorage.setItem('cart', JSON.stringify(items));
+  }, [items]);
+
+  const openCart = () => setIsOpen(true);
+  const closeCart = () => setIsOpen(false);
+
+  const addToCart = (newItem: CartItem) => {
+    setItems((prevItems) => {
+      const existingIndex = prevItems.findIndex(
+        (item) => item.product.id === newItem.product.id && item.sizeId === newItem.sizeId
+      );
+
+      let updatedItems;
+      if (existingIndex >= 0) {
+        updatedItems = [...prevItems];
+        updatedItems[existingIndex].quantity += newItem.quantity;
+      } else {
+        updatedItems = [...prevItems, newItem];
       }
-      return [...prev, item];
+
+      return updatedItems;
     });
+
+    openCart();
   };
 
-  const removeFromCart = (id: string) => {
-    setCartItems((prev) => prev.filter((item) => item.id !== id));
+  const removeFromCart = (productId: string, sizeId: string) => {
+    setItems((prevItems) =>
+      prevItems.filter((item) => item.product.id !== productId || item.sizeId !== sizeId)
+    );
+  };
+
+  // ✅ Clear cart both in state and localStorage
+  const clearCart = () => {
+    setItems([]);
+    localStorage.removeItem('cart');
   };
 
   return (
-    <CartContext.Provider value={{ cartItems, addToCart, removeFromCart }}>
+    <CartContext.Provider
+      value={{
+        items,
+        isOpen,
+        cartCount,
+        openCart,
+        closeCart,
+        addToCart,
+        removeFromCart,
+        clearCart,
+      }}
+    >
       {children}
     </CartContext.Provider>
   );
 };
 
-// Custom Hook to use Cart Context
 export const useCart = () => {
   const context = useContext(CartContext);
-  if (!context) {
-    throw new Error('useCart must be used within a CartContextProvider');
-  }
+  if (!context) throw new Error('useCart must be used within CartContextProvider');
   return context;
 };

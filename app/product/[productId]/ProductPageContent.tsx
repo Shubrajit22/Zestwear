@@ -7,6 +7,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { toast } from "react-hot-toast";
 import type { Prisma,Product } from "@prisma/client";
+import SlidingCart from "@/app/components/Slidingcart";
 
 // Product with stockImages + sizeOptions
 export type ProductWithExtras = Prisma.ProductGetPayload<{
@@ -37,7 +38,7 @@ export default function ProductPageContent({
 }) {
   const { addToCart } = useCart();
   const { data: session } = useSession();
-
+  const [isCartOpen, setIsCartOpen] = useState(false);
   const [reviews, setReviews] = useState<ReviewWithUser[]>(initialReviews || []);
   const [isLoadingReviews, setIsLoadingReviews] = useState(false);
   const [errorFetchingReviews, setErrorFetchingReviews] = useState("");
@@ -87,44 +88,52 @@ export default function ProductPageContent({
     ]);
   };
 
-  const handleAddToCart = async () => {
-    if (!selectedSize) {
-      toast.error("Please select a size!");
-      return;
-    }
+const handleAddToCart = async () => {
+  if (!selectedSizeOption) {
+    toast.error("Please select a size!");
+    return;
+  }
 
-    const productToAdd = {
+  const newItem = {
+    id: `temp-${Date.now()}`,
+    product: {
       id: product.id,
       name: product.name,
-      price: displayedPrice,
+      price: selectedSizeOption.price,
       imageUrl: mainImage,
-      quantity: 1,
-      size: selectedSize,
-    };
-
-    addToCart(productToAdd);
-
-    try {
-      const res = await fetch("/api/cart", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          productId: product.id,
-          quantity: 1,
-          size: selectedSize,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        toast.error(data.message || "Failed to add to cart");
-      } else {
-        toast.success("Added to cart successfully!");
-      }
-    } catch (error) {
-      toast.error("An error occurred while adding the item to the cart");
-      console.error("Error sending cart data:", error);
-    }
+      description: product.description,
+      sizeOptions: product.sizeOptions,
+    },
+    quantity: 1,
+    size: selectedSizeOption.size,
+    sizeId: selectedSizeOption.id,
   };
+
+  addToCart(newItem); // Automatically opens the cart
+  toast.success("Added to cart!");
+  
+
+  try {
+    const res = await fetch("/api/cart", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        productId: product.id,
+        quantity: 1,
+        size: selectedSizeOption.size,
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      toast.error(data.message || "Failed to add to cart");
+    }
+  } catch (error) {
+    toast.error("An error occurred while syncing cart.");
+    console.error("Cart sync error:", error);
+  }
+  setIsCartOpen(true);
+};
+
 
   // only compare categoryId, not category (since Prisma Product has categoryId)
   const relatedCategoryProducts = relatedProducts.filter(
@@ -330,6 +339,9 @@ return (
     >
       Add to Cart
     </button>
+    <SlidingCart isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
+
+
   </div>
 
   {/* Trust / secondary info */}

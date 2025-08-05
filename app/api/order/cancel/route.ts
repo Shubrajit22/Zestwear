@@ -130,7 +130,7 @@ export async function PATCH(req: NextRequest) {
     </p>
 
     <p style="margin:0 0 16px; font-size:14px;">
-      If you have any questions, reply to this email or contact our support team at <a href="mailto:zestwearindia.info@gmail.com" style="color:#2563eb; text-decoration:none;">support@yourdomain.com</a>.
+      If you have any questions, reply to this email or contact our support team at <a href="mailto:zestwearindia.info@gmail.com" style="color:#2563eb; text-decoration:none;">zestwearindia.info@gmail.com</a>.
     </p>
 
     <div style="padding:14px; background:#f3f4f6; border-radius:6px; font-size:12px; color:#6b7280;">
@@ -160,10 +160,10 @@ ${address}
 
 Our team will get back to you soon to process your refund (typically 3–5 business days).
 
-If you have any questions, contact support@yourdomain.com.
+If you have any questions, contact zestwearindia.info@gmail.com.
 
 Thank you,
-Your Brand Name
+Zestwear India
 `;
 
     // --- EMAIL TO BUSINESS ---
@@ -247,7 +247,7 @@ ${address}
 
     // send mails
     await transporter.sendMail({
-      from: `"Your Brand Name" <${process.env.EMAIL_USER}>`,
+      from: `"Zestwear India" <${process.env.EMAIL_USER}>`,
       to: order.user.email,
       subject: userEmailSubject,
       text: userEmailText,
@@ -255,7 +255,7 @@ ${address}
     });
 
     await transporter.sendMail({
-      from: `"Your Brand Name" <${process.env.EMAIL_USER}>`,
+      from: `"Zestwear India" <${process.env.EMAIL_USER}>`,
       to: process.env.BUSINESS_EMAIL,
       subject: businessEmailSubject,
       text: businessEmailText,

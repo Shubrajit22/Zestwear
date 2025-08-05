@@ -3,7 +3,11 @@
 
 
 @import "tw-animate-css"; /* Make sure this exists and is installed */
-
+@layer utilities {
+  .animate-spin-slow {
+    animation: spin 3s linear infinite;
+  }
+}
 :root {
   --gradient-start: #ffffff;
   --gradient-end: #f0f0f0;
