@@ -5,6 +5,8 @@ import Image from "next/image";
 import { getNumericOrderId } from "@/lib/utils";
 import CancelOrderButton from "../components/CancelOrderButton";
 import { toast } from "react-hot-toast";
+import { FiShoppingBag } from "react-icons/fi";
+
 
 interface OrderItem {
   id: string;
@@ -85,9 +87,11 @@ export default function OrdersPageClient({
  return (
     <div className="min-h-screen bg-gray-100 py-10 px-4">
       <main className="w-full max-w-5xl mx-auto">
-        <h1 className="text-3xl font-bold mb-10 text-center text-gray-900">
+        <h1 className="flex items-center justify-center gap-2 text-xl sm:text-2xl md:text-3xl font-bold mb-10 text-gray-900 mt-20">
+          <FiShoppingBag />
           Your Orders
         </h1>
+
 
         <div className="space-y-8">
           {orders.map((order) => {
@@ -153,10 +157,10 @@ export default function OrdersPageClient({
                         ? "Paid"
                         : order.paymentStatus.charAt(0).toUpperCase() + order.paymentStatus.slice(1)}
                     </span>
-                    <span className="px-3 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-700">
+                    <span className="px-3 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-700 ">
                         {order.shippingStatus.charAt(0).toUpperCase() + order.shippingStatus.slice(1)}
                     </span>
-
+                  
                   {order.shippingStatus === "processing" &&
                     order.status !== "cancelled" && (
                       <CancelOrderButton orderId={order.id} />
@@ -165,7 +169,7 @@ export default function OrdersPageClient({
                   {isReturnable && (
                     <button
                       onClick={() => setSelectedOrder(order)}
-                      className="ml-auto px-4 py-1.5 text-sm font-medium bg-red-500 text-white rounded-md hover:bg-red-600 transition"
+                      className="ml-auto px-4 py-1.5 text-sm font-medium bg-red-500 text-white rounded-md hover:bg-red-600 transition cursor-pointer"
                     >
                       Return Order
                     </button>

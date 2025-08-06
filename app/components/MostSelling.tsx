@@ -15,9 +15,10 @@ export interface Product {
 }
 
 const Star = ({ filled }: { filled: "full" | "half" | "empty" }) => {
-  if (filled === "full") return <span aria-label="Full star">★</span>;
-  if (filled === "half") return <span aria-label="Half star">⯨</span>;
-  return <span aria-label="Empty star">☆</span>;
+if (filled === "full") return <span aria-label="Full star" className="text-xs sm:text-sm">★</span>;
+if (filled === "half") return <span aria-label="Half star" className="text-xs sm:text-sm">⯨</span>;
+return <span aria-label="Empty star" className="text-xs sm:text-sm">☆</span>;
+
 };
 
 function renderStars(rating: number) {

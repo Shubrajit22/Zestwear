@@ -368,13 +368,23 @@ const calculateTotal = () => {
                 value={selectedAddress}
                 onChange={(e) => setSelectedAddress(e.target.value)}
               />
+              <p className="text-xs text-gray-500 mt-1">
+                Please enter your full address to enable payment.
+              </p>
+
 
               <button
-                onClick={handleRazorpayPayment}
-                className="w-full mt-4 bg-black text-white py-3 rounded hover:bg-gray-800 cursor-pointer"
-              >
-                Pay Now – ₹{(calculateTotal() || 0).toFixed(2)}
-              </button>
+  onClick={handleRazorpayPayment}
+  disabled={!selectedAddress.trim()} // disable when no address
+  className={`w-full mt-4 py-3 rounded transition-colors ${
+    selectedAddress.trim()
+      ? "bg-black text-white hover:bg-gray-800 cursor-pointer"
+      : "bg-gray-300 text-gray-500 cursor-not-allowed"
+  }`}
+>
+  Pay Now – ₹{(calculateTotal() || 0).toFixed(2)}
+</button>
+
             </>
           )}
         </div>

@@ -39,7 +39,7 @@ export default function CancelOrderButton({ orderId, onCancelled }: Props) {
       onClick={cancelOrder}
       disabled={loading}
       aria-label="Cancel order"
-      className={`relative flex items-center gap-2 border rounded-lg px-4 py-1 text-sm font-medium transition ${
+      className={`relative flex items-center gap-2 border rounded-lg px-4 py-1 text-sm font-medium transition cursor-pointer ${
         loading
           ? "border-gray-300 text-gray-400 cursor-not-allowed"
           : "border-red-500 text-red-500 hover:bg-red-500 hover:text-white"

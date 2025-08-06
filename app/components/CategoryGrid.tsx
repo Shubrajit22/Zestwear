@@ -8,6 +8,7 @@ type Category = {
   name: string;
   imageUrl: string;
   description: string;
+  order: number;
 };
 
 export const CategoryGrid = () => {
@@ -19,7 +20,9 @@ export const CategoryGrid = () => {
       try {
         const res = await fetch('/api/products/categories');
         const data = await res.json();
-        setCategories(data);
+        // sort in case API doesn’t guarantee order
+        const sorted = [...data].sort((a, b) => a.order - b.order);
+        setCategories(sorted);
       } catch (err) {
         console.error('Failed to fetch categories:', err);
       } finally {
@@ -54,8 +57,12 @@ export const CategoryGrid = () => {
                   className="w-[100px] h-[100px] sm:w-[120px] sm:h-[120px] object-cover rounded-md"
                 />
                 <div className="mt-3 text-center">
-                  <h2 className="text-base sm:text-lg font-semibold capitalize text-gray-800">{cat.name}</h2>
-                  <p className="mt-1 text-xs sm:text-sm text-gray-600 line-clamp-2">{cat.description}</p>
+                  <h2 className="text-base sm:text-lg font-semibold capitalize text-gray-800">
+                    {cat.name}
+                  </h2>
+                  <p className="mt-1 text-xs sm:text-sm text-gray-600 line-clamp-2">
+                    {cat.description}
+                  </p>
                 </div>
               </div>
             </div>

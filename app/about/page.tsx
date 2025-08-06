@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 
 export default function About() {
   return (
-    <div className="relative min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-800 text-white overflow-hidden">
+    <div className="relative min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-800 text-white overflow-hidden mt-20">
       {/* Background gradient blobs */}
       <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-gradient-to-br from-pink-500/20 via-purple-500/20 to-transparent rounded-full blur-3xl"></div>
       <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-gradient-to-tr from-blue-500/20 via-cyan-500/20 to-transparent rounded-full blur-3xl"></div>

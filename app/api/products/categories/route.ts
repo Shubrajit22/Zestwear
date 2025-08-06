@@ -1,5 +1,3 @@
-// /app/api/products/categories/route.ts
-
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
@@ -9,8 +7,12 @@ export async function GET() {
       select: {
         id: true,
         name: true,
-        imageUrl: true, // Add this field in your schema if missing
-        description: true, // Ensure you add this field
+        imageUrl: true,
+        description: true,
+        order: true, // include the order field
+      },
+      orderBy: {
+        order: "asc", // sort by the numeric order field
       },
     });
 

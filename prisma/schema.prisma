@@ -123,8 +123,10 @@ model ProductCategory {
   name        ProductCategoryEnum @unique
   imageUrl    String
   description String
+  order       Int                 @default(0) 
   products    Product[]
 }
+
 
 model Product {
   id          String           @id @default(cuid())
@@ -194,6 +196,7 @@ enum ProductType {
 enum ProductCategoryEnum {
   BRAHMAND
   NIRVAY
+  PRAKRITI
   JERSEY
   CUSTOMISE
   UNIFORM

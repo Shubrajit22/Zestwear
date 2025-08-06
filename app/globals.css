@@ -31,6 +31,13 @@
     --gradient-end: #333333;
   }
 }
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-poppins);
+}
+
+body {
+  font-family: var(--font-inter);
+}
 
 body {
   background: linear-gradient(to bottom right, var(--gradient-start), var(--gradient-end));
