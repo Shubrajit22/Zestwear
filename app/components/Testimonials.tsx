@@ -3,6 +3,8 @@
 import Image from 'next/image';
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { FaStar, FaRegStar } from "react-icons/fa";
+
 
 const testimonials = [
   {
@@ -112,11 +114,14 @@ const Testimonials = () => {
                     <h4 className="font-bold text-gray-800">{t.name}</h4>
                     <p className="text-sm text-gray-600 mt-1">{t.text}</p>
                     <div className="text-yellow-500 mt-2 flex items-center gap-1">
-                      {[...Array(5)].map((_, idx) => (
-                        <span key={idx} className={t.rating > idx ? '' : 'opacity-40'}>
-                          ★
-                        </span>
-                      ))}
+                      {[...Array(5)].map((_, idx) =>
+                          t.rating > idx ? (
+                            <FaStar key={idx} className="text-yellow-500" />
+                          ) : (
+                            <FaRegStar key={idx} className="text-yellow-500 opacity-40" />
+                          )
+                        )}
+
                       <span className="text-xs text-gray-500 ml-2">{t.rating}.0</span>
                     </div>
                   </div>
