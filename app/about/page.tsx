@@ -4,12 +4,12 @@ import { motion } from 'framer-motion';
 
 export default function About() {
   return (
-    <div className="relative min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-800 text-white overflow-hidden mt-20">
+    <div className="relative min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-800 text-white overflow-hidden ">
       {/* Background gradient blobs */}
       <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-gradient-to-br from-pink-500/20 via-purple-500/20 to-transparent rounded-full blur-3xl"></div>
       <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-gradient-to-tr from-blue-500/20 via-cyan-500/20 to-transparent rounded-full blur-3xl"></div>
 
-      <div className="relative z-10 flex flex-col md:flex-row items-center justify-center min-h-screen px-8 md:px-20 py-10 gap-16">
+      <div className="relative z-10 flex flex-col md:flex-row items-center justify-center min-h-screen px-8 md:px-20 py-10 gap-16 mt-20">
         {/* Left Text Section */}
         <motion.div
           initial={{ opacity: 0, x: -50 }}
@@ -46,7 +46,7 @@ export default function About() {
           className="flex-shrink-0"
         >
           <Image
-            src="/home/logo1.jpeg"
+            src="/images/logo.jpg"
             alt="Zestwear Logo"
             width={500}
             height={500}
