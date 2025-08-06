@@ -214,9 +214,9 @@ const handleAddToCart = async () => {
     }
   };
 return (
-  <div className="bg-white-gradient min-h-screen flex flex-col items-center justify-center pt-16 px-4 sm:px-6 md:px-10 pb-10 text-black mt-20">
+  <div className="bg-white-gradient min-h-screen flex flex-col items-center justify-center pt-16 px-4 sm:px-6 md:px-10 pb-10 text-black ">
     {/* Product Section */}
-    <div className="flex flex-col md:flex-row w-full gap-8">
+    <div className="flex flex-col md:flex-row w-full gap-8 mt-20">
       {/* Left: Image */}
       <div className="w-full md:w-1/2 flex flex-col items-center gap-4">
         <div className="w-full sm:w-[300px] md:w-[400px] h-[300px] sm:h-[300px] md:h-[400px] border-2 border-black p-2 rounded-md flex items-center justify-center">

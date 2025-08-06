@@ -1,4 +1,5 @@
 'use client';
+export const dynamic = "force-dynamic";
 import { useRouter } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
 import Link from 'next/link';
@@ -20,8 +21,8 @@ export default function Navbar() {
   const [isCartOpen, setIsCartOpen] = useState(false);
 
   // ✅ Get cart state and clearCart from context
-  const { cartCount, clearCart } = useCart();
-
+  const {  clearCart, items } = useCart();
+  const cartCount = items.reduce((sum, item) => sum + item.quantity, 0);
   const handleProfileClick = () => {
     setProfileOpen((o) => !o);
     setMenuOpen(false);
@@ -33,16 +34,17 @@ export default function Navbar() {
     setMenuOpen(false);
   };
 
-  const handleLogout = async () => {
-    try {
-      await signOut();
-      clearCart(); // Clear cart on logout
-      window.location.href = '/';
-    } catch (error) {
-      console.error('Logout failed:', error);
-    }
-    setProfileOpen(false);
-  };
+const handleLogout = async () => {
+  try {
+    await signOut({ redirect: false });
+    clearCart(); 
+    router.push('/');
+  } catch (error) {
+    console.error('Logout failed:', error);
+  }
+  setProfileOpen(false);
+};
+
 
   // Click outside handler
   useEffect(() => {

@@ -1,6 +1,6 @@
 export default function TermsAndConditions() {
   return (
-    <div className="max-w-3xl mx-auto px-6 py-10 mt-32 bg-white shadow-xl rounded-2xl border border-gray-200">
+    <div className="max-w-3xl mx-auto px-6 py-10 mt-32 bg-white shadow-xl rounded-2xl border border-gray-200 mb-20">
       <h1 className="text-4xl font-bold text-gray-900 mb-4 border-b border-gray-300 pb-2">
         Terms & Conditions
       </h1>
