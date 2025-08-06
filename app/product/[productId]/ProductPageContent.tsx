@@ -8,6 +8,8 @@ import Link from "next/link";
 import { toast } from "react-hot-toast";
 import type { Prisma,Product } from "@prisma/client";
 import SlidingCart from "@/app/components/Slidingcart";
+import { FaStar, FaStarHalfAlt, FaRegStar } from "react-icons/fa";
+
 
 // Product with stockImages + sizeOptions
 export type ProductWithExtras = Prisma.ProductGetPayload<{
@@ -46,6 +48,19 @@ export default function ProductPageContent({
   const [newRating, setNewRating] = useState(0);
 
   const fallbackImage = "/images/fallback-image.jpg";
+const renderStars = (rating: number | null) => {
+  const stars = [];
+  for (let i = 1; i <= 5; i++) {
+    if (!rating || rating < i - 0.5) {
+      stars.push(<FaRegStar key={i} className="text-gray-300 text-sm" />);
+    } else if (rating >= i) {
+      stars.push(<FaStar key={i} className="text-yellow-400 text-sm" />);
+    } else {
+      stars.push(<FaStarHalfAlt key={i} className="text-yellow-400 text-sm" />);
+    }
+  }
+  return stars;
+};
 
   // derive average rating from the reviews
   const reviewCount = reviews.length;
@@ -241,17 +256,8 @@ return (
   {/* Rating summary from reviews */}
   <div className="flex items-center gap-2">
     <div className="flex">
-      {[...Array(5)].map((_, i) => (
-        <span
-          key={i}
-          className={`text-sm ${
-            averageRating && averageRating > i ? 'text-yellow-400' : 'text-gray-300'
-          }`}
-          aria-hidden="true"
-        >
-          ★
-        </span>
-      ))}
+      {renderStars(averageRating)}
+
     </div>
     {roundedAvg !== null ? (
       <span className="text-sm text-gray-500 ml-2">
@@ -404,17 +410,21 @@ return (
               {Array(5)
                 .fill(0)
                 .map((_, idx) => (
-                  <span
+                  <button
                     key={idx}
+                    type="button"
                     onClick={() => setNewRating(idx + 1)}
-                    className={`text-2xl cursor-pointer transition ${
-                      newRating > idx ? 'text-yellow-500' : 'text-gray-300'
-                    }`}
+                    className="text-2xl cursor-pointer transition"
                     aria-label={`${idx + 1} star`}
                   >
-                    ★
-                  </span>
+                    {newRating >= idx + 1 ? (
+                      <FaStar className="text-yellow-500" />
+                    ) : (
+                      <FaRegStar className="text-gray-300" />
+                    )}
+                  </button>
                 ))}
+
             </div>
           </div>
 
@@ -450,17 +460,8 @@ return (
   <div className="max-w-3xl mx-auto flex flex-col sm:flex-row items-start sm:items-center gap-6 mb-6">
     <div className="flex items-center gap-3">
       <div className="flex">
-        {[...Array(5)].map((_, i) => (
-          <span
-            key={i}
-            className={`text-xl ${
-              averageRating && averageRating > i ? 'text-yellow-400' : 'text-gray-300'
-            }`}
-            aria-hidden="true"
-          >
-            ★
-          </span>
-        ))}
+        {renderStars(averageRating)}
+
       </div>
       <div className="flex flex-col">
         {roundedAvg !== null ? (
@@ -509,17 +510,8 @@ return (
               <div className="flex items-center justify-between flex-wrap gap-2">
                 <p className="font-semibold">{review.user?.name || 'Anonymous'}</p>
                 <div className="flex items-center gap-1">
-                  {[...Array(5)].map((_, idx) => (
-                    <span
-                      key={idx}
-                      className={`text-sm ${
-                        review.rating > idx ? 'text-yellow-500' : 'text-gray-300'
-                      }`}
-                      aria-hidden="true"
-                    >
-                      ★
-                    </span>
-                  ))}
+                  {renderStars(review.rating)}
+
                   <span className="text-xs text-gray-500 ml-2">{review.rating.toFixed(1)}</span>
                 </div>
               </div>

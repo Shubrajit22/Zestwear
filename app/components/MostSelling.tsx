@@ -3,6 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { twMerge } from "tailwind-merge";
+import { FaStar, FaStarHalfAlt, FaRegStar } from "react-icons/fa";
 
 export interface Product {
   id: string;
@@ -15,10 +16,9 @@ export interface Product {
 }
 
 const Star = ({ filled }: { filled: "full" | "half" | "empty" }) => {
-if (filled === "full") return <span aria-label="Full star" className="text-xs sm:text-sm">★</span>;
-if (filled === "half") return <span aria-label="Half star" className="text-xs sm:text-sm">⯨</span>;
-return <span aria-label="Empty star" className="text-xs sm:text-sm">☆</span>;
-
+  if (filled === "full") return <FaStar className="text-xs sm:text-sm" />;
+  if (filled === "half") return <FaStarHalfAlt className="text-xs sm:text-sm" />;
+  return <FaRegStar className="text-xs sm:text-sm" />;
 };
 
 function renderStars(rating: number) {
