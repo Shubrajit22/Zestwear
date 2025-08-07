@@ -1,12 +1,31 @@
-// middleware.ts
 import { NextRequest, NextResponse } from 'next/server';
+import jwt from 'jsonwebtoken';
+
+const JWT_SECRET = process.env.JWT_SECRET!;
 
 export function middleware(req: NextRequest) {
-  const isLoggedIn = req.cookies.get('token')?.value; // Use JWT or session logic here
-  const isAdmin = req.cookies.get('isAdmin')?.value === 'true';
+  const token = req.cookies.get('token')?.value;
 
-  if (req.nextUrl.pathname.startsWith('/admin') && (!isLoggedIn || !isAdmin)) {
-    return NextResponse.redirect(new URL('/login', req.url));
+  if (req.nextUrl.pathname.startsWith('/admin')) {
+    if (!token) {
+      return NextResponse.redirect(new URL('/login', req.url));
+    }
+
+    try {
+      const decoded = jwt.verify(token, JWT_SECRET) as any;
+
+      // ✅ Check isAdmin from JWT
+      if (!decoded.isAdmin) {
+        return NextResponse.redirect(new URL('/login', req.url));
+      }
+    } catch (err) {
+      return NextResponse.redirect(new URL('/login', req.url));
+    }
   }
+
   return NextResponse.next();
 }
+
+export const config = {
+  matcher: ['/admin/:path*'],
+};

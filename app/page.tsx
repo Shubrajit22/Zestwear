@@ -39,18 +39,19 @@ export default async function Home() {
 
   return (
     <>
-      <main className="text-white relative">
+            <main className="text-white bg-black relative">
         {/* Background gradients */}
         <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-gradient-to-br from-pink-500/20 via-purple-500/20 to-transparent rounded-full blur-3xl"></div>
         <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-gradient-to-tr from-blue-500/20 via-cyan-500/20 to-transparent rounded-full blur-3xl"></div>
 
         {/* Hero */}
-        <div className="w-full h-screen flex items-center relative z-10">
+        <div className="w-full min-h-screen flex items-center relative z-10">
           <div className="w-full flex flex-col md:flex-row justify-between items-center gap-12">
             <HeroSection />
           </div>
         </div>
       </main>
+
 
       {/* Categories */}
       <ScrollAnimationWrapper>
@@ -61,11 +62,13 @@ export default async function Home() {
       </ScrollAnimationWrapper>
 
       {/* Customize */}
+      <main className="text-white bg-black relative">
       <ScrollAnimationWrapper delay={0.2}>
         <section>
           <CustomizeCard />
         </section>
       </ScrollAnimationWrapper>
+      </main>
 
       {/* Most Reviewed */}
       <ScrollAnimationWrapper delay={0.4}>

@@ -1,31 +1,51 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import jwt from 'jsonwebtoken';
+
+const JWT_SECRET = process.env.JWT_SECRET!;
 
 export async function POST(req: NextRequest) {
   try {
-    const { action } = await req.json();  // Use .json() to parse the incoming JSON body
+    const token = req.cookies.get('token')?.value;
+
+    if (!token) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const decoded: any = jwt.verify(token, JWT_SECRET);
+
+    if (decoded.role !== 'admin') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    const { action } = await req.json();
 
     if (action === 'dashboard') {
-      // Query data needed for the dashboard
-      const usersCount = await prisma.user.count();
-      const ordersCount = await prisma.order.count();
-      const productsCount = await prisma.product.count();
-      const reviewsCount = await prisma.review.count();
+      const [usersCount, ordersCount, productsCount, reviewsCount] = await prisma.$transaction([
+        prisma.user.count(),
+        prisma.order.count(),
+        prisma.product.count(),
+        prisma.review.count(),
+      ]);
 
-      // Revenue stats (optional)
-      const revenueToday = await prisma.order.aggregate({
-        _sum: { totalAmount: true },
-        where: { createdAt: { gte: new Date(new Date().setHours(0, 0, 0, 0)) } },
-      });
+      const startOfToday = new Date();
+      startOfToday.setHours(0, 0, 0, 0);
 
-      const revenueMonth = await prisma.order.aggregate({
-        _sum: { totalAmount: true },
-        where: { createdAt: { gte: new Date(new Date().setMonth(new Date().getMonth() - 1)) } },
-      });
+      const startOfMonth = new Date(startOfToday.getFullYear(), startOfToday.getMonth(), 1);
 
-      const revenueAllTime = await prisma.order.aggregate({
-        _sum: { totalAmount: true },
-      });
+      const [revenueToday, revenueMonth, revenueAllTime] = await Promise.all([
+        prisma.order.aggregate({
+          _sum: { totalAmount: true },
+          where: { createdAt: { gte: startOfToday } },
+        }),
+        prisma.order.aggregate({
+          _sum: { totalAmount: true },
+          where: { createdAt: { gte: startOfMonth } },
+        }),
+        prisma.order.aggregate({
+          _sum: { totalAmount: true },
+        }),
+      ]);
 
       return NextResponse.json({
         usersCount,
@@ -36,16 +56,16 @@ export async function POST(req: NextRequest) {
         revenueMonth: revenueMonth._sum.totalAmount || 0,
         revenueAllTime: revenueAllTime._sum.totalAmount || 0,
       });
-    } else {
-      return NextResponse.json({ error: 'Unknown action' }, { status: 400 });
     }
+
+    return NextResponse.json({ error: 'Unknown action' }, { status: 400 });
+
   } catch (error) {
-    console.error(error);
+    console.error('Dashboard API error:', error);
     return NextResponse.json({ error: 'Something went wrong' }, { status: 500 });
   }
 }
 
-// Handle other HTTP methods (GET, etc.)
 export async function GET() {
   return NextResponse.json({ error: 'Method Not Allowed' }, { status: 405 });
 }

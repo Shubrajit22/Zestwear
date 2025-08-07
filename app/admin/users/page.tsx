@@ -20,14 +20,23 @@ export default function UsersPage() {
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
 
-  useEffect(() => {
-    fetch("/api/admin/users")
-      .then((res) => res.json())
-      .then((data) => setUsers(data || []))
-      .catch(() => {
-        // handle fetch error if needed
-      });
-  }, []);
+useEffect(() => {
+  fetch("/api/admin/users")
+    .then((res) => res.json())
+    .then((data) => {
+      if (Array.isArray(data)) {
+        setUsers(data);
+      } else {
+        console.error("Invalid data format:", data);
+        setUsers([]);
+      }
+    })
+    .catch((err) => {
+      console.error("Failed to fetch users", err);
+      setUsers([]);
+    });
+}, []);
+
 
   // debounce the search input
   useEffect(() => {

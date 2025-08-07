@@ -1,8 +1,11 @@
+// app/api/products/route.ts
+
 import { prisma } from '@/lib/prisma';
 import { NextRequest } from 'next/server';
 import { ProductType } from '@prisma/client';
+import { auth } from '@/lib/auth1'; // ✅ import auth session helper
 
-// Reusable interfaces for input validation
+// Interfaces
 interface SizeOptionInput {
   size: string;
   price: number;
@@ -28,24 +31,33 @@ interface ProductRequestBody {
   color?: string;
   texture?: string;
   neckline?: string;
-
-  // Existing size data (for display only)
   sizeOptions?: SizeOptionInput[];
-
-  // Existing image data (for display only)
   stockImages?: StockImageInput[];
-
-  // To add
   newSizeOptions?: SizeOptionInput[];
   newStockImages?: StockImageInput[];
-
-  // To selectively delete
   deletedSizeOptionIds?: string[];
   deletedStockImageIds?: string[];
 }
 
-// ✅ GET: Fetch all products
+// ✅ Helper: Check if current user is admin
+async function checkAdmin() {
+  const session = await auth();
+  if (!session?.user) return { status: 401, message: 'Unauthorized' };
+
+  const user = await prisma.user.findUnique({
+    where: { email: session.user.email! },
+  });
+
+  if (!user?.isAdmin) return { status: 403, message: 'Forbidden' };
+
+  return null; // ✅ All good
+}
+
+// ✅ GET
 export async function GET() {
+  const authError = await checkAdmin();
+  if (authError) return new Response(JSON.stringify({ error: authError.message }), { status: authError.status });
+
   try {
     const products = await prisma.product.findMany({
       include: {
@@ -62,28 +74,17 @@ export async function GET() {
   }
 }
 
-// ✅ POST: Add a new product
+// ✅ POST
 export async function POST(req: NextRequest) {
+  const authError = await checkAdmin();
+  if (authError) return new Response(JSON.stringify({ error: authError.message }), { status: authError.status });
+
   try {
     const body: ProductRequestBody = await req.json();
-
     const {
-      name,
-      description,
-      price,
-      mrpPrice,
-      discount,
-      imageUrl,
-      categoryId,
-      type,
-      state,
-      district,
-      institution,
-      color,
-      texture,
-      neckline,
-      sizeOptions = [],
-      stockImages = [],
+      name, description, price, mrpPrice, discount, imageUrl, categoryId, type,
+      state, district, institution, color, texture, neckline,
+      sizeOptions = [], stockImages = [],
     } = body;
 
     const newProduct = await prisma.product.create({
@@ -103,25 +104,18 @@ export async function POST(req: NextRequest) {
         texture,
         neckline,
         sizeOptions: {
-          create: sizeOptions
-            .filter((s) => s.size && s.price)
-            .map((s) => ({
-              size: s.size,
-              price: s.price,
-            })),
-        },
-        stockImages: {
-          create: stockImages.map((img: string | StockImageInput) => ({
-            imageUrl: typeof img === "string" ? img : img.imageUrl,
+          create: sizeOptions.filter((s) => s.size && s.price).map((s) => ({
+            size: s.size,
+            price: s.price,
           })),
         },
-
-
+        stockImages: {
+          create: stockImages.map((img) => ({
+            imageUrl: typeof img === 'string' ? img : img.imageUrl,
+          })),
+        },
       },
-      include: {
-        sizeOptions: true,
-        stockImages: true,
-      },
+      include: { sizeOptions: true, stockImages: true },
     });
 
     return new Response(JSON.stringify(newProduct), { status: 201 });
@@ -131,91 +125,43 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// ✅ PUT: Update product
+// ✅ PUT
 export async function PUT(req: Request) {
+  const authError = await checkAdmin();
+  if (authError) return new Response(JSON.stringify({ error: authError.message }), { status: authError.status });
+
   try {
     const body: ProductRequestBody = await req.json();
-
     const {
-      id,
-      name,
-      description,
-      price,
-      mrpPrice,
-      discount,
-      imageUrl,
-      categoryId,
-      type,
-      state,
-      district,
-      institution,
-      color,
-      texture,
-      neckline,
-      newSizeOptions = [],
-      deletedSizeOptionIds = [],
-      newStockImages = [],
-      deletedStockImageIds = [],
+      id, name, description, price, mrpPrice, discount, imageUrl, categoryId, type,
+      state, district, institution, color, texture, neckline,
+      newSizeOptions = [], deletedSizeOptionIds = [],
+      newStockImages = [], deletedStockImageIds = [],
     } = body;
 
-    if (!id) {
-      return new Response(JSON.stringify({ error: 'Product ID is required' }), { status: 400 });
-    }
+    if (!id) return new Response(JSON.stringify({ error: 'Product ID is required' }), { status: 400 });
 
-    const categoryExists = await prisma.productCategory.findUnique({
-      where: { id: categoryId },
-    });
+    const categoryExists = await prisma.productCategory.findUnique({ where: { id: categoryId } });
+    if (!categoryExists) return new Response(JSON.stringify({ error: 'Category not found' }), { status: 400 });
 
-    if (!categoryExists) {
-      return new Response(JSON.stringify({ error: 'Category not found' }), { status: 400 });
-    }
+    if (deletedSizeOptionIds.length)
+      await prisma.sizeOption.deleteMany({ where: { id: { in: deletedSizeOptionIds }, productId: id } });
 
-    // 🔥 Delete selected size options
-    if (deletedSizeOptionIds.length > 0) {
-      await prisma.sizeOption.deleteMany({
-        where: {
-          id: { in: deletedSizeOptionIds },
-          productId: id,
-        },
-      });
-    }
-
-    // ✨ Add new size options
-    if (newSizeOptions.length > 0) {
+    if (newSizeOptions.length)
       await prisma.sizeOption.createMany({
-        data: newSizeOptions.map((size) => ({
-          productId: id,
-          size: size.size,
-          price: size.price,
-        })),
+        data: newSizeOptions.map((size) => ({ productId: id, size: size.size, price: size.price })),
       });
-    }
 
-    // 🗑️ Delete selected images
-    if (deletedStockImageIds.length > 0) {
-      await prisma.stockImage.deleteMany({
-        where: {
-          id: { in: deletedStockImageIds },
-          productId: id,
-        },
-      });
-    }
+    if (deletedStockImageIds.length)
+      await prisma.stockImage.deleteMany({ where: { id: { in: deletedStockImageIds }, productId: id } });
 
-    // ✅ Normalize and create new stock images (type-safe)
-    const normalizedStockImages: StockImageInput[] = newStockImages.filter(
-      (img): img is StockImageInput => !!img.imageUrl?.trim()
-    );
+    const normalizedStockImages = newStockImages.filter((img): img is StockImageInput => !!img.imageUrl?.trim());
 
-    if (normalizedStockImages.length > 0) {
+    if (normalizedStockImages.length)
       await prisma.stockImage.createMany({
-        data: normalizedStockImages.map((img) => ({
-          productId: id,
-          imageUrl: img.imageUrl,
-        })),
+        data: normalizedStockImages.map((img) => ({ productId: id, imageUrl: img.imageUrl })),
       });
-    }
 
-    // ⚙️ Update main product
     const updatedProduct = await prisma.product.update({
       where: { id },
       data: {
@@ -246,15 +192,15 @@ export async function PUT(req: Request) {
     return new Response(JSON.stringify({ error: 'Internal Server Error' }), { status: 500 });
   }
 }
-//DELETE
-export async function DELETE(req: Request) {
-  try {
-    const body: { id: string } = await req.json();
-    const { id } = body;
 
-    if (!id) {
-      return new Response(JSON.stringify({ error: 'Product ID is required' }), { status: 400 });
-    }
+// ✅ DELETE
+export async function DELETE(req: Request) {
+  const authError = await checkAdmin();
+  if (authError) return new Response(JSON.stringify({ error: authError.message }), { status: authError.status });
+
+  try {
+    const { id } = await req.json();
+    if (!id) return new Response(JSON.stringify({ error: 'Product ID is required' }), { status: 400 });
 
     const product = await prisma.product.findUnique({
       where: { id },
@@ -266,36 +212,22 @@ export async function DELETE(req: Request) {
       },
     });
 
-    if (!product) {
-      return new Response(JSON.stringify({ error: 'Product not found' }), { status: 404 });
-    }
+    if (!product) return new Response(JSON.stringify({ error: 'Product not found' }), { status: 404 });
 
-    // Delete related records first
     await prisma.orderItem.deleteMany({ where: { productId: id } });
-    await prisma.review.deleteMany({ where: { productId: id } }); // delete reviews
+    await prisma.review.deleteMany({ where: { productId: id } });
     await prisma.sizeOption.deleteMany({ where: { productId: id } });
     await prisma.stockImage.deleteMany({ where: { productId: id } });
-
-    // Finally delete the product
     await prisma.product.delete({ where: { id } });
 
     return new Response(null, { status: 204 });
-  } catch (error: unknown) {
-  console.error('Error deleting product:', error);
+  } catch (error: any) {
+    console.error('Error deleting product:', error);
 
-  if (
-    typeof error === 'object' &&
-    error !== null &&
-    'code' in error &&
-    (error as { code?: string }).code === 'P2003'
-  ) {
-    return new Response(
-      JSON.stringify({
-        error: 'Cannot delete product because it is linked to other records',
-      }),
-      { status: 400 }
-    );
+    if (error?.code === 'P2003') {
+      return new Response(JSON.stringify({ error: 'Cannot delete product due to linked records' }), { status: 400 });
+    }
+
+    return new Response(JSON.stringify({ error: 'Internal Server Error' }), { status: 500 });
   }
-
-  return new Response(JSON.stringify({ error: 'Internal Server Error' }), { status: 500 });
-}}
+}

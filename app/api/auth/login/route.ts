@@ -1,12 +1,15 @@
+// app/api/login/route.ts
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+
+const JWT_SECRET = process.env.JWT_SECRET!;
 
 export async function POST(req: Request) {
   try {
     const { email, password, mobile } = await req.json();
 
-    // Validate inputs
     if (!email && !mobile) {
       return NextResponse.json({ message: 'Email or mobile is required' }, { status: 400 });
     }
@@ -14,37 +17,53 @@ export async function POST(req: Request) {
       return NextResponse.json({ message: 'Password is required' }, { status: 400 });
     }
 
-    // Build OR filter dynamically (only include provided fields)
     const orFilters = [];
     if (email) orFilters.push({ email });
     if (mobile) orFilters.push({ mobile });
 
     const user = await prisma.user.findFirst({
-      where: {
-        OR: orFilters,
-      },
+      where: { OR: orFilters },
     });
 
     if (!user) {
-      return NextResponse.json({ message: 'No user found with this email or mobile' }, { status: 400 });
+      return NextResponse.json({ message: 'No user found' }, { status: 400 });
     }
 
-    // Ensure user.password is defined (schema should make it required)
-    const hashed = user.password || '';
-    const isValid = await bcrypt.compare(password, hashed);
+    const isValid = await bcrypt.compare(password, user.password || '');
     if (!isValid) {
       return NextResponse.json({ message: 'Invalid credentials' }, { status: 401 });
     }
 
-    const session = {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      mobile: user.mobile,
-      image: user.image,
-    };
+    // ✅ Sign JWT token
+    const token = jwt.sign(
+      {
+        id: user.id,
+        email: user.email,
+        isAdmin: user.isAdmin, // used in middleware
+      },
+      JWT_SECRET,
+      { expiresIn: '1d' }
+    );
 
-    return NextResponse.json({ message: 'Login successful', user: session });
+    // ✅ Set HttpOnly cookie
+    const response = NextResponse.json({
+      message: 'Login successful',
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        mobile: user.mobile,
+        image: user.image,
+        isAdmin: user.isAdmin,
+      },
+    });
+
+    response.headers.set(
+      'Set-Cookie',
+      `token=${token}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=86400`
+    );
+
+    return response;
   } catch (error) {
     console.error('Login error:', error);
     return NextResponse.json({ message: 'Server error' }, { status: 500 });

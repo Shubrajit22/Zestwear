@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { toast } from 'react-hot-toast';
 
 interface Review {
@@ -20,9 +21,29 @@ export default function AdminReviewPage() {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
+
+  const router = useRouter();
+
+  const checkAdmin = async () => {
+    try {
+      const res = await fetch('/api/admin/check');
+      if (!res.ok) throw new Error('Not authorized');
+      const data = await res.json();
+      if (data.isAdmin) {
+        setIsAuthorized(true);
+        fetchReviews();
+      } else {
+        setIsAuthorized(false);
+        router.replace('/unauthorized'); // or login page
+      }
+    } catch (err) {
+      setIsAuthorized(false);
+      router.replace('/unauthorized');
+    }
+  };
 
   const fetchReviews = async () => {
-    setLoading(true);
     const res = await fetch('/api/reviews');
     const data = await res.json();
     setReviews(data);
@@ -45,10 +66,16 @@ export default function AdminReviewPage() {
   };
 
   useEffect(() => {
-    fetchReviews();
+    checkAdmin();
   }, []);
 
-  if (loading) return <div className="p-6 text-center">Loading reviews...</div>;
+  if (isAuthorized === null) {
+    return <div className="p-6 text-center">Checking permissions...</div>;
+  }
+
+  if (loading) {
+    return <div className="p-6 text-center">Loading reviews...</div>;
+  }
 
   return (
     <div className="p-8 max-w-4xl mx-auto mt-20">
