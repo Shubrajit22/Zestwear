@@ -8,7 +8,7 @@ import { toast } from 'react-hot-toast';
 import { MdClose } from 'react-icons/md';
 import { useCart } from './CartContextProvider';
 
-interface CartItem {
+export interface CartItem {
   id: string;
   product: {
     id: string;
@@ -24,9 +24,10 @@ interface CartItem {
   };
   quantity: number;
   size: string;
-  price: number; // Price saved when item added to cart
+  price: number; // ✅ this is critical
   sizeId?: string | null;
 }
+
 
 interface RazorpayResponse {
   razorpay_payment_id: string;
@@ -40,16 +41,20 @@ interface SlidingCartProps {
 }
 
 const SlidingCart = ({ isOpen, onClose }: SlidingCartProps) => {
-  const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const { items: cartItems, clearCart, setCartItemsFromServer } = useCart() as {
+  items: CartItem[];
+  clearCart: () => void;
+  setCartItemsFromServer: (items: CartItem[]) => void;
+};
+
   const [loadingCart, setLoadingCart] = useState(false);
   const [processingPayment, setProcessingPayment] = useState(false);
   const [user, setUser] = useState<{ name: string; email: string; mobile: string } | null>(null);
   const [selectedAddress, setSelectedAddress] = useState('');
   const router = useRouter();
   const cartRef = useRef<HTMLDivElement>(null);
-  const { clearCart } = useCart();
 
-  // Fetch user and cart when cart opens
+  // Fetch user and cart when opened
   useEffect(() => {
     const fetchUserAndCart = async () => {
       try {
@@ -72,21 +77,19 @@ const SlidingCart = ({ isOpen, onClose }: SlidingCartProps) => {
     }
   }, [isOpen]);
 
-  // Fetch cart items
   const fetchCartItems = async () => {
     setLoadingCart(true);
     try {
       const res = await fetch('/api/cart');
       const data = await res.json();
       if (res.ok && Array.isArray(data.cartItems)) {
-        setCartItems(data.cartItems);
+        setCartItemsFromServer(data.cartItems);
       }
     } finally {
       setLoadingCart(false);
     }
   };
 
-  // Load Razorpay script
   useEffect(() => {
     const script = document.createElement('script');
     script.src = 'https://checkout.razorpay.com/v1/checkout.js';
@@ -97,7 +100,6 @@ const SlidingCart = ({ isOpen, onClose }: SlidingCartProps) => {
     };
   }, []);
 
-  // Close cart when clicking outside
   useEffect(() => {
     const handleOutsideClick = (e: MouseEvent) => {
       if (cartRef.current && !cartRef.current.contains(e.target as Node)) {
@@ -112,43 +114,34 @@ const SlidingCart = ({ isOpen, onClose }: SlidingCartProps) => {
     };
   }, [isOpen]);
 
-  // Update quantity
   const handleUpdateQuantity = async (itemId: string, newQuantity: number) => {
-    setCartItems((prev) =>
-      prev.map((item) =>
-        item.id === itemId ? { ...item, quantity: newQuantity } : item
-      )
-    );
     await fetch('/api/cart', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ itemId, newQuantity }),
     });
+    await fetchCartItems();
   };
 
-  // Remove item
   const handleRemoveItem = async (itemId: string) => {
     const response = await fetch(`/api/cart?cartItemId=${itemId}`, {
       method: 'DELETE',
     });
     if (response.ok) {
-      setCartItems((prev) => prev.filter((item) => item.id !== itemId));
+      await fetchCartItems();
     }
   };
 
-  // Calculate total price using CartItem.price
-const calculateTotal = () => {
-  return cartItems.reduce((total, item) => {
-    const price =
-      item.price ??
-      item.product.sizeOptions.find((s) => s.size === item.size)?.price ??
-      item.product.price ??
-      0;
-    return total + price * item.quantity;
-  }, 0);
-};
-
-
+  const calculateTotal = () => {
+    return cartItems.reduce((total, item) => {
+      const price =
+        item.price ??
+        item.product.sizeOptions.find((s) => s.size === item.size)?.price ??
+        item.product.price ??
+        0;
+      return total + price * item.quantity;
+    }, 0);
+  };
 
   const handlePaymentSuccess = async (response: RazorpayResponse) => {
     if (!selectedAddress) {
@@ -156,33 +149,32 @@ const calculateTotal = () => {
       return;
     }
 
-    setProcessingPayment(true); // Show loader immediately
+    setProcessingPayment(true);
 
     const orderPayload = {
-  razorpay_payment_id: response.razorpay_payment_id,
-  razorpay_order_id: response.razorpay_order_id,
-  email: user?.email,
-  name: user?.name,
-  amount: calculateTotal(),
-  address: selectedAddress,
-  items: cartItems.map((item) => {
-    const finalPrice =
-      item.price ??
-      item.product.sizeOptions.find((s) => s.size === item.size)?.price ??
-      item.product.price ??
-      0;
+      razorpay_payment_id: response.razorpay_payment_id,
+      razorpay_order_id: response.razorpay_order_id,
+      email: user?.email,
+      name: user?.name,
+      amount: calculateTotal(),
+      address: selectedAddress,
+      items: cartItems.map((item) => {
+        const finalPrice =
+          item.price ??
+          item.product.sizeOptions.find((s) => s.size === item.size)?.price ??
+          item.product.price ??
+          0;
 
-    return {
-      name: item.product.name,
-      quantity: item.quantity,
-      price: finalPrice,
-      size: item.size,
-      productId: item.product.id,
-      sizeId: item.sizeId || null,
+        return {
+          name: item.product.name,
+          quantity: item.quantity,
+          price: finalPrice,
+          size: item.size,
+          productId: item.product.id,
+          sizeId: item.sizeId || null,
+        };
+      }),
     };
-  }),
-};
-
 
     try {
       const res = await fetch('/api/order', {
@@ -192,13 +184,11 @@ const calculateTotal = () => {
       });
 
       if (res.ok) {
-        clearCart(); // Clear context state
-        setCartItems([]); // Clear local state
-
-        // Wait briefly so loader is visible
+        clearCart();
+        await fetchCartItems(); // just in case
         setTimeout(() => {
           setProcessingPayment(false);
-          onClose(); // Close the cart UI
+          onClose();
           router.push('/orders');
         }, 1500);
       } else {
@@ -211,7 +201,6 @@ const calculateTotal = () => {
     }
   };
 
-  // Start Razorpay payment
   const handleRazorpayPayment = async () => {
     const res = await fetch('/api/razorpay', {
       method: 'POST',
@@ -242,19 +231,8 @@ const calculateTotal = () => {
   };
 
   return (
-    <div
-      className={`fixed inset-0 z-50 bg-black/50 transition-opacity duration-300 ${
-        isOpen ? 'opacity-100 visible' : 'opacity-0 invisible'
-      }`}
-    >
-      {/* Sliding panel */}
-      <div
-        ref={cartRef}
-        className={`absolute top-0 right-0 h-full w-[90%] sm:w-[400px] max-w-full bg-white text-black shadow-lg overflow-y-auto transition-transform duration-300 ease-in-out ${
-          isOpen ? 'translate-x-0' : 'translate-x-full'
-        }`}
-      >
-        {/* Header */}
+    <div className={`fixed inset-0 z-50 bg-black/50 transition-opacity duration-300 ${isOpen ? 'opacity-100 visible' : 'opacity-0 invisible'}`}>
+      <div ref={cartRef} className={`absolute top-0 right-0 h-full w-[90%] sm:w-[400px] max-w-full bg-white text-black shadow-lg overflow-y-auto transition-transform duration-300 ease-in-out ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}>
         <div className="flex justify-between items-center p-4 border-b">
           <h2 className="text-lg sm:text-xl font-semibold">Your Cart</h2>
           <div className="flex items-center gap-3">
@@ -264,8 +242,8 @@ const calculateTotal = () => {
                   try {
                     const res = await fetch('/api/cart', { method: 'DELETE' });
                     if (res.ok) {
-                      clearCart(); // clears local context
-                      setCartItems([]); // clears local state
+                      clearCart();
+                      await fetchCartItems();
                       toast.success('Cart cleared successfully.');
                     } else {
                       toast.error('Failed to clear cart.');
@@ -285,7 +263,6 @@ const calculateTotal = () => {
           </div>
         </div>
 
-        {/* Cart Content */}
         <div className="p-4 space-y-4">
           {loadingCart ? (
             <p className="text-center">Loading...</p>
@@ -295,7 +272,6 @@ const calculateTotal = () => {
             <>
               {cartItems.map((item) => (
                 <div key={item.id} className="relative flex gap-3 sm:gap-4 border-b pb-4">
-                  {/* Product Image */}
                   <Image
                     src={item.product.imageUrl}
                     alt={item.product.name}
@@ -303,10 +279,7 @@ const calculateTotal = () => {
                     height={64}
                     className="w-16 h-16 object-cover rounded"
                   />
-
-                  {/* Product Details */}
                   <div className="flex-1 text-sm">
-                    {/* Remove Button */}
                     <button
                       onClick={() => handleRemoveItem(item.id)}
                       className="absolute top-0 right-0 p-1 text-red-500 hover:text-red-700 cursor-pointer"
@@ -318,21 +291,19 @@ const calculateTotal = () => {
                     <h3 className="font-semibold text-base">{item.product.name}</h3>
                     <p className="text-xs text-gray-500 line-clamp-2">{item.product.description}</p>
 
-                    {/* Size, Price, Quantity */}
                     <div className="flex flex-wrap items-center justify-between mt-2 text-xs gap-y-1">
                       <p>Size: <span className="font-medium">{item.size}</span></p>
                       <p>
-  Price: 
-  <span className="font-medium">
-    ₹{(
-      item.price ??
-      item.product.sizeOptions.find((s) => s.size === item.size)?.price ??
-      item.product.price ??
-      0
-    ).toFixed(2)}
-  </span>
-</p>
-
+                        Price:
+                        <span className="font-medium">
+                          ₹{(
+                            item.price ??
+                            item.product.sizeOptions.find((s) => s.size === item.size)?.price ??
+                            item.product.price ??
+                            0
+                          ).toFixed(2)}
+                        </span>
+                      </p>
 
                       <div className="flex items-center gap-2">
                         <button
@@ -355,7 +326,6 @@ const calculateTotal = () => {
                 </div>
               ))}
 
-              {/* Total Price */}
               <div className="mt-4">
                 <h3 className="font-semibold text-lg">
                   Total: ₹{(calculateTotal() || 0).toFixed(2)}
@@ -368,36 +338,30 @@ const calculateTotal = () => {
                 value={selectedAddress}
                 onChange={(e) => setSelectedAddress(e.target.value)}
               />
-              <p className="text-xs text-gray-500 mt-1">
-                Please enter your full address to enable payment.
-              </p>
-
+              <p className="text-xs text-gray-500 mt-1">Please enter your full address to enable payment.</p>
 
               <button
-  onClick={handleRazorpayPayment}
-  disabled={!selectedAddress.trim()} // disable when no address
-  className={`w-full mt-4 py-3 rounded transition-colors ${
-    selectedAddress.trim()
-      ? "bg-black text-white hover:bg-gray-800 cursor-pointer"
-      : "bg-gray-300 text-gray-500 cursor-not-allowed"
-  }`}
->
-  Pay Now – ₹{(calculateTotal() || 0).toFixed(2)}
-</button>
-
+                onClick={handleRazorpayPayment}
+                disabled={!selectedAddress.trim()}
+                className={`w-full mt-4 py-3 rounded transition-colors ${
+                  selectedAddress.trim()
+                    ? "bg-black text-white hover:bg-gray-800 cursor-pointer"
+                    : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                }`}
+              >
+                Pay Now – ₹{(calculateTotal() || 0).toFixed(2)}
+              </button>
             </>
           )}
         </div>
       </div>
 
-      {/* Processing Payment Overlay */}
       {processingPayment && (
         <div className="fixed inset-0 z-[999] flex flex-col items-center justify-center bg-black bg-opacity-70 backdrop-blur-md">
           <div className="relative w-20 h-20">
             <div className="absolute inset-0 rounded-full border-4 border-t-transparent border-white animate-spin"></div>
             <div className="absolute inset-4 rounded-full border-4 border-t-transparent border-gray-400 animate-spin-slow"></div>
           </div>
-
           <p className="mt-6 text-white text-lg font-semibold tracking-wide">Processing your order...</p>
           <p className="mt-1 text-gray-300 text-sm">Please wait, redirecting to your orders</p>
         </div>

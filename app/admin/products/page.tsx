@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState,useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import toast from 'react-hot-toast';
@@ -30,37 +30,51 @@ const Products = () => {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [error, setError] = useState<string>('');
   const router = useRouter();
+  const loadingToastRef = useRef<string | null>(null);
 
-  useEffect(() => {
-    const fetchProductsAndCategories = async () => {
-      setLoading(true);
-      setError('');
-      try {
-        const [productsRes, categoriesRes] = await Promise.all([
-          fetch('/api/admin/products'),
-          fetch('/api/admin/categories'),
-        ]);
 
-        if (!productsRes.ok) throw new Error('Failed to fetch products');
-        if (!categoriesRes.ok) throw new Error('Failed to fetch categories');
+useEffect(() => {
+  const fetchProductsAndCategories = async () => {
+    setLoading(true);
+    setError('');
 
-        const productsData: Product[] = await productsRes.json();
-        const categoriesData: Category[] = await categoriesRes.json();
+    // Show loading toast only once
+    if (!loadingToastRef.current) {
+      loadingToastRef.current = toast.loading('Loading products...');
+    }
 
-        setProducts(productsData.sort((a, b) => a.name.localeCompare(b.name)));
-        setCategories(categoriesData);
-      } catch (err) {
-        const message = err instanceof Error ? err.message : 'An unknown error occurred';
-        console.error('Error fetching data:', message);
-        setError(message);
-        toast.error(message);
-      } finally {
-        setLoading(false);
+    try {
+      const [productsRes, categoriesRes] = await Promise.all([
+        fetch('/api/admin/products'),
+        fetch('/api/admin/categories'),
+      ]);
+
+      if (!productsRes.ok) throw new Error('Failed to fetch products');
+      if (!categoriesRes.ok) throw new Error('Failed to fetch categories');
+
+      const productsData: Product[] = await productsRes.json();
+      const categoriesData: Category[] = await categoriesRes.json();
+
+      setProducts(productsData.sort((a, b) => a.name.localeCompare(b.name)));
+      setCategories(categoriesData);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'An unknown error occurred';
+      console.error('Error fetching data:', message);
+      setError(message);
+      toast.error(message);
+    } finally {
+      // Dismiss the loader only if it was shown
+      if (loadingToastRef.current) {
+        toast.dismiss(loadingToastRef.current);
+        loadingToastRef.current = null;
       }
-    };
+      setLoading(false);
+    }
+  };
 
-    fetchProductsAndCategories();
-  }, []);
+  fetchProductsAndCategories();
+}, []);
+
 
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this product?')) return;

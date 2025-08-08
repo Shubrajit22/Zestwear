@@ -21,8 +21,8 @@ export default function Navbar() {
   const [isCartOpen, setIsCartOpen] = useState(false);
 
   // ✅ Get cart state and clearCart from context
-  const {  clearCart, items } = useCart();
-  const cartCount = items.reduce((sum, item) => sum + item.quantity, 0);
+  const { clearCart, cartCount } = useCart();
+
   const handleProfileClick = () => {
     setProfileOpen((o) => !o);
     setMenuOpen(false);
@@ -156,9 +156,12 @@ const handleLogout = async () => {
         <div className="relative cursor-pointer" onClick={() => setIsCartOpen(true)}>
           <MdShoppingCart size={26} className="hover:text-yellow-400" />
           {cartCount > 0 && (
-            <span className="absolute -top-2 -right-2 text-xs bg-red-600 text-white rounded-full px-1">
+            <span
+              className="absolute -top-2 -right-2 text-xs bg-red-600 text-white rounded-full px-1 animate-[pop_0.3s_ease]"
+            >
               {cartCount}
             </span>
+
           )}
         </div>
 

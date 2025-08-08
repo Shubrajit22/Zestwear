@@ -110,19 +110,21 @@ const handleAddToCart = async () => {
   }
 
   const newItem = {
-    id: `temp-${Date.now()}`,
-    product: {
-      id: product.id,
-      name: product.name,
-      price: selectedSizeOption.price,
-      imageUrl: mainImage,
-      description: product.description,
-      sizeOptions: product.sizeOptions,
-    },
-    quantity: 1,
-    size: selectedSizeOption.size,
-    sizeId: selectedSizeOption.id,
-  };
+  id: `temp-${Date.now()}`,
+  product: {
+    id: product.id,
+    name: product.name,
+    price: selectedSizeOption.price,
+    imageUrl: mainImage,
+    description: product.description,
+    sizeOptions: product.sizeOptions,
+  },
+  quantity: 1,
+  size: selectedSizeOption.size,
+  sizeId: selectedSizeOption.id,
+  price: selectedSizeOption.price, // ✅ Add this!
+};
+
 
   addToCart(newItem); // Automatically opens the cart
   toast.success("Added to cart!");

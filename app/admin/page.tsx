@@ -11,8 +11,9 @@ export default function AdminDashboard() {
     { href: "/admin/reviews", label: "Manage Reviews", icon: <Star className="w-5 h-5" /> },
   ];
 
-  return (
-    <div className="p-6 max-w-3xl mx-auto mt-20">
+return (
+  <div className="w-full min-h-screen bg-black flex items-center justify-center">
+    <div className="w-full max-w-3xl p-6 bg-black">
       <h1 className="text-4xl font-bold mb-8 text-center text-gray-100">Admin Dashboard</h1>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
@@ -28,5 +29,6 @@ export default function AdminDashboard() {
         ))}
       </div>
     </div>
-  );
+  </div>
+);
 }

@@ -18,8 +18,10 @@ interface CartItem {
   };
   quantity: number;
   size: string;
+  price: number; // ✅ Add this line
   sizeId?: string | null;
 }
+
 
 interface CartContextType {
   items: CartItem[];
@@ -29,8 +31,10 @@ interface CartContextType {
   closeCart: () => void;
   addToCart: (item: CartItem) => void;
   removeFromCart: (productId: string, sizeId: string) => void;
-  clearCart: () => void; // ✅ Added
+  clearCart: () => void;
+  setCartItemsFromServer: (items: CartItem[]) => void;
 }
+
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
@@ -55,6 +59,10 @@ export const CartContextProvider = ({ children }: { children: React.ReactNode })
 
   const openCart = () => setIsOpen(true);
   const closeCart = () => setIsOpen(false);
+  // Add this function inside the context for external components to refresh cart
+const setCartItemsFromServer = (newItems: CartItem[]) => {
+  setItems(newItems);
+};
 
   const addToCart = (newItem: CartItem) => {
     setItems((prevItems) => {
@@ -90,17 +98,19 @@ export const CartContextProvider = ({ children }: { children: React.ReactNode })
 
   return (
     <CartContext.Provider
-      value={{
-        items,
-        isOpen,
-        cartCount,
-        openCart,
-        closeCart,
-        addToCart,
-        removeFromCart,
-        clearCart,
-      }}
-    >
+  value={{
+    items,
+    isOpen,
+    cartCount,
+    openCart,
+    closeCart,
+    addToCart,
+    removeFromCart,
+    clearCart,
+    setCartItemsFromServer, // expose it
+  }}
+>
+
       {children}
     </CartContext.Provider>
   );
