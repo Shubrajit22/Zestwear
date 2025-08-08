@@ -150,20 +150,43 @@ export async function PUT(req: NextRequest) {
 }
 
 // DELETE: Clear all cart items for logged-in user
+// DELETE: Remove a specific item or clear the entire cart
 export async function DELETE(req: NextRequest) {
   const session = await getServerSession(authOptions);
 
   if (!session?.user?.id) {
-    return NextResponse.json({}, { status: 401 });
+    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
 
-  try {
-    await prisma.cartItem.deleteMany({
-      where: { userId: session.user.id },
-    });
+  const { searchParams } = new URL(req.url);
+  const cartItemId = searchParams.get("cartItemId");
 
-    return NextResponse.json({ message: "Cart cleared successfully" }, { status: 200 });
-  } catch {
-    return NextResponse.json({ message: "Failed to clear cart" }, { status: 500 });
+  try {
+    if (cartItemId) {
+      // ✅ Delete a specific item
+      const existingItem = await prisma.cartItem.findUnique({
+        where: { id: cartItemId },
+      });
+
+      if (!existingItem || existingItem.userId !== session.user.id) {
+        return NextResponse.json({ message: "Item not found or unauthorized" }, { status: 404 });
+      }
+
+      await prisma.cartItem.delete({
+        where: { id: cartItemId },
+      });
+
+      return NextResponse.json({ message: "Item removed from cart" }, { status: 200 });
+    } else {
+      // 🧹 No ID? Clear the entire cart
+      await prisma.cartItem.deleteMany({
+        where: { userId: session.user.id },
+      });
+
+      return NextResponse.json({ message: "Cart cleared successfully" }, { status: 200 });
+    }
+  } catch (error) {
+    console.error("Error deleting cart item(s):", error);
+    return NextResponse.json({ message: "Failed to delete item(s)" }, { status: 500 });
   }
 }

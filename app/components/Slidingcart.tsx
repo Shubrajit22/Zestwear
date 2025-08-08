@@ -124,13 +124,14 @@ const SlidingCart = ({ isOpen, onClose }: SlidingCartProps) => {
   };
 
   const handleRemoveItem = async (itemId: string) => {
-    const response = await fetch(`/api/cart?cartItemId=${itemId}`, {
-      method: 'DELETE',
-    });
-    if (response.ok) {
-      await fetchCartItems();
-    }
-  };
+  const response = await fetch(`/api/cart?cartItemId=${itemId}`, {
+    method: 'DELETE',
+  });
+  if (response.ok) {
+    await fetchCartItems(); 
+  }
+};
+
 
   const calculateTotal = () => {
     return cartItems.reduce((total, item) => {
