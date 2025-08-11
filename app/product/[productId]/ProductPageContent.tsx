@@ -9,6 +9,7 @@ import { toast } from "react-hot-toast";
 import type { Prisma,Product } from "@prisma/client";
 import SlidingCart from "@/app/components/Slidingcart";
 import { FaStar, FaStarHalfAlt, FaRegStar } from "react-icons/fa";
+import { useRouter } from "next/navigation";
 
 
 // Product with stockImages + sizeOptions
@@ -46,6 +47,7 @@ export default function ProductPageContent({
   const [errorFetchingReviews, setErrorFetchingReviews] = useState("");
   const [newReview, setNewReview] = useState("");
   const [newRating, setNewRating] = useState(0);
+  const router=useRouter();
 
   const fallbackImage = "/images/fallback-image.jpg";
 const renderStars = (rating: number | null) => {
@@ -104,31 +106,32 @@ const renderStars = (rating: number | null) => {
   };
 
 const handleAddToCart = async () => {
+  if (!session?.user) { // ✅ Make sure you have `const { data: session } = useSession();` above
+    toast.error("Please sign in to add items to cart.");
+    router.push("/login"); // or your sign-in route
+    return; // stop here
+  }
+
   if (!selectedSizeOption) {
     toast.error("Please select a size!");
     return;
   }
 
   const newItem = {
-  id: `temp-${Date.now()}`,
-  product: {
-    id: product.id,
-    name: product.name,
+    id: `temp-${Date.now()}`,
+    product: {
+      id: product.id,
+      name: product.name,
+      price: selectedSizeOption.price,
+      imageUrl: mainImage,
+      description: product.description,
+      sizeOptions: product.sizeOptions,
+    },
+    quantity: 1,
+    size: selectedSizeOption.size,
+    sizeId: selectedSizeOption.id,
     price: selectedSizeOption.price,
-    imageUrl: mainImage,
-    description: product.description,
-    sizeOptions: product.sizeOptions,
-  },
-  quantity: 1,
-  size: selectedSizeOption.size,
-  sizeId: selectedSizeOption.id,
-  price: selectedSizeOption.price, // ✅ Add this!
-};
-
-
-  addToCart(newItem); // Automatically opens the cart
-  toast.success("Added to cart!");
-  
+  };
 
   try {
     const res = await fetch("/api/cart", {
@@ -140,15 +143,22 @@ const handleAddToCart = async () => {
         size: selectedSizeOption.size,
       }),
     });
+
     const data = await res.json();
     if (!res.ok) {
       toast.error(data.message || "Failed to add to cart");
+      return; // don't add locally if server failed
     }
+
+    // ✅ Only add to cart if backend succeeded
+    addToCart(newItem);
+    toast.success("Added to cart!");
+    setIsCartOpen(true);
+
   } catch (error) {
     toast.error("An error occurred while syncing cart.");
     console.error("Cart sync error:", error);
   }
-  setIsCartOpen(true);
 };
 
 

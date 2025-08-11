@@ -9,7 +9,7 @@ export async function GET() {
   const session = await getServerSession(authOptions);
 
   if (!session?.user?.id) {
-    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    return NextResponse.json({ status: 401 });
   }
 
   try {
@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
 
   if (!session?.user?.id) {
-    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    return NextResponse.json( { status: 401 });
   }
 
   const { productId, quantity, size } = await req.json();
@@ -117,7 +117,7 @@ export async function PUT(req: NextRequest) {
   const session = await getServerSession(authOptions);
 
   if (!session?.user?.id) {
-    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    return NextResponse.json( { status: 401 });
   }
 
   const { itemId, newQuantity } = await req.json();
@@ -155,7 +155,7 @@ export async function DELETE(req: NextRequest) {
   const session = await getServerSession(authOptions);
 
   if (!session?.user?.id) {
-    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    return NextResponse.json({ status: 401 });
   }
 
   const { searchParams } = new URL(req.url);

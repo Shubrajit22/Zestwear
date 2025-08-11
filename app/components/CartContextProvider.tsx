@@ -64,12 +64,20 @@ const setCartItemsFromServer = (newItems: CartItem[]) => {
   setItems(newItems);
 };
 
-  const addToCart = (newItem: CartItem) => {
+const addToCart = async (newItem: CartItem): Promise<boolean> => {
+  try {
+    const res = await fetch("/api/me");
+    const data = await res.json();
+
+    if (!res.ok || !data.user) {
+      window.location.href = "/login";
+      return false; 
+    }
+
     setItems((prevItems) => {
       const existingIndex = prevItems.findIndex(
         (item) => item.product.id === newItem.product.id && item.sizeId === newItem.sizeId
       );
-
       let updatedItems;
       if (existingIndex >= 0) {
         updatedItems = [...prevItems];
@@ -77,12 +85,17 @@ const setCartItemsFromServer = (newItems: CartItem[]) => {
       } else {
         updatedItems = [...prevItems, newItem];
       }
-
       return updatedItems;
     });
 
     openCart();
-  };
+    return true; // ✅ Successfully added
+  } catch (error) {
+    console.error("Error checking user login:", error);
+    window.location.href = "/login";
+    return false;
+  }
+};
 
   const removeFromCart = (productId: string, sizeId: string) => {
     setItems((prevItems) =>
