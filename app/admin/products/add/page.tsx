@@ -39,10 +39,6 @@ export default function AddProductPage() {
   const [stockImages, setStockImages] = useState<string[]>([]);
   const [loadingUpload, setLoadingUpload] = useState(false);
 
-  // Cloudinary config
-  const CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME!;
-  const UPLOAD_PRESET = process.env.NEXT_PUBLIC_CLOUDINARY_PRESET!;
-
   useEffect(() => {
     const fetchCategories = async () => {
       try {
@@ -75,41 +71,62 @@ export default function AddProductPage() {
     setSizeOptions(sizeOptions.filter((_, index) => index !== i));
 
   // Cloudinary upload
-  const handleCloudinaryUpload = async (file: File, index?: number) => {
+ // Convert file to base64 string
+  const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = (error) => reject(error);
+      reader.readAsDataURL(file);
+    });
+  };
+
+  // Upload image to your backend API
+  const handleDirectUpload = async (file: File, index?: number) => {
     if (!file) return;
     setLoadingUpload(true);
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('upload_preset', UPLOAD_PRESET);
-
     try {
-      const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, {
+      const base64 = await fileToBase64(file);
+      const res = await fetch('/api/upload', {
         method: 'POST',
-        body: formData,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          filename: file.name,
+          fileBase64: base64,
+        }),
       });
+
       const data = await res.json();
-      const url = data.secure_url;
+      if (!res.ok) throw new Error(data.error || 'Upload failed');
+
+      const url = data.url;
 
       if (index !== undefined) {
+        // update stock image at index
         const updated = [...stockImages];
         updated[index] = url;
         setStockImages(updated);
       } else {
+        // update main image url
         setForm((prev) => ({ ...prev, imageUrl: url }));
       }
 
       toast.success('Image uploaded!');
-    } catch (err) {
+    } catch (error) {
       toast.error('Failed to upload image');
-      console.log(err);
+      console.error(error);
     } finally {
       setLoadingUpload(false);
     }
   };
 
+  // Remove main image
+  const removeMainImage = () => setForm((prev) => ({ ...prev, imageUrl: '' }));
+
+  // Stock image handlers
   const addStockImage = () => setStockImages([...stockImages, '']);
-  const removeStockImage = (i: number) =>
-    setStockImages(stockImages.filter((_, index) => index !== i));
+  const removeStockImage = (index: number) =>
+    setStockImages(stockImages.filter((_, i) => i !== index));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -164,13 +181,29 @@ export default function AddProductPage() {
         {/* Main Image Upload */}
         <div className="flex flex-col gap-2">
           <p className="font-semibold">Main Image:</p>
-          {form.imageUrl && (
-            <Image src={form.imageUrl} alt="preview" width={100} height={100} className="rounded" />
-          )}
+          {form.imageUrl ? (
+            <div className="relative w-[100px] h-[100px]">
+              <Image
+                src={form.imageUrl}
+                alt="Main Image"
+                fill
+                className="rounded object-cover"
+              />
+              <button
+                type="button"
+                onClick={removeMainImage}
+                className="absolute top-0 right-0 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center cursor-pointer"
+                title="Remove main image"
+              >
+                ✕
+              </button>
+            </div>
+          ) : null}
           <input
             type="file"
             accept="image/*"
-            onChange={(e) => e.target.files && handleCloudinaryUpload(e.target.files[0])}
+            onChange={(e) => e.target.files && handleDirectUpload(e.target.files[0])}
+            disabled={loadingUpload}
           />
         </div>
 
@@ -207,18 +240,30 @@ export default function AddProductPage() {
         </select>
 
         {/* Stock Images Upload */}
-        <div>
+         <div>
           <p className="font-semibold">Stock Images:</p>
           {stockImages.map((img, index) => (
             <div key={index} className="flex gap-2 my-1 items-center">
-              {img && img.startsWith('http') && (
-                <Image src={img} alt="preview" width={48} height={48} className="rounded" />
-              )}
+              {img ? (
+                <div className="relative w-[48px] h-[48px]">
+                  <Image
+                    src={img}
+                    alt={`Stock image ${index + 1}`}
+                    fill
+                    className="rounded object-cover"
+                  />
+                </div>
+              ) : null}
+
               <input
                 type="file"
                 accept="image/*"
-                onChange={(e) => e.target.files && handleCloudinaryUpload(e.target.files[0], index)}
+                onChange={(e) =>
+                  e.target.files && handleDirectUpload(e.target.files[0], index)
+                }
+                disabled={loadingUpload}
               />
+
               <button
                 type="button"
                 onClick={() => removeStockImage(index)}
@@ -228,6 +273,7 @@ export default function AddProductPage() {
               </button>
             </div>
           ))}
+
           <button
             type="button"
             onClick={addStockImage}

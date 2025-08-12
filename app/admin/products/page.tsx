@@ -157,7 +157,7 @@ useEffect(() => {
                 key={product.id}
                 className="border rounded p-4 flex gap-4 items-center shadow-sm hover:shadow-md transition"
               >
-                {imageSrc.startsWith('http') ? (
+                {imageSrc && (imageSrc.startsWith('http') || imageSrc.startsWith('/')) ? (
                   <Image
                     src={imageSrc}
                     alt={product.name}
@@ -170,7 +170,6 @@ useEffect(() => {
                     No image
                   </div>
                 )}
-
                 <div className="flex-1">
                   <h2 className="text-lg font-semibold">{product.name}</h2>
                   <p className="text-sm text-gray-600">

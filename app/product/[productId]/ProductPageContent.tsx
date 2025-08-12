@@ -72,12 +72,14 @@ const renderStars = (rating: number | null) => {
       : null;
   const roundedAvg = averageRating ? Math.round(averageRating * 10) / 10 : null;
 
-  const getValidImage = (src: string | undefined | null): string => {
-    if (typeof src === "string" && src.trim().startsWith("http")) {
-      return src;
-    }
-    return fallbackImage;
-  };
+const getValidImage = (src: string | undefined | null): string => {
+  if (!src) return fallbackImage;
+  if (src.trim().startsWith('http') || src.trim().startsWith('/')) {
+    return src.trim();
+  }
+  return fallbackImage;
+};
+
 
   const allImages =
     product.stockImages.length > 0

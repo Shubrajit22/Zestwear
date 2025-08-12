@@ -9,6 +9,7 @@ export default function AdminDashboard() {
     { href: "/admin/orders", label: "Manage Orders", icon: <ClipboardList className="w-5 h-5" /> },
     { href: "/admin/products", label: "Manage Products", icon: <Package className="w-5 h-5" /> },
     { href: "/admin/reviews", label: "Manage Reviews", icon: <Star className="w-5 h-5" /> },
+    { href: "/admin/uploads", label: "Manage Images", icon: <Star className="w-5 h-5" /> },
   ];
 
 return (
