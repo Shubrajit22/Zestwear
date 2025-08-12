@@ -1,10 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server';
 import path from 'path';
 import fs from 'fs/promises';
+import { auth } from '@/lib/auth1'; 
+import { prisma } from '@/lib/prisma';
+
+async function checkAdmin() {
+  const session = await auth();
+  if (!session?.user) return { status: 401, message: 'Unauthorized' };
+
+  const user = await prisma.user.findUnique({
+    where: { email: session.user.email! },
+  });
+
+  if (!user?.isAdmin) return { status: 403, message: 'Forbidden' };
+
+  return null; // ✅ Passed
+}
 
 const UPLOAD_DIR = path.join(process.cwd(), 'public', 'uploads');
 
 export async function DELETE(request: NextRequest) {
+  const authError = await checkAdmin();
+        if (authError) return NextResponse.json({ error: authError.message }, { status: authError.status });
   try {
     const { filename } = await request.json();
 

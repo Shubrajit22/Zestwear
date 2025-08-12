@@ -1,5 +1,18 @@
 version: '3.8'
 services:
+  postgres:
+    image: postgres:15
+    container_name: zestware_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: zestuser
+      POSTGRES_PASSWORD: zestpass
+      POSTGRES_DB: zestdb
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
   zestware:
     build:
       context: .
@@ -7,6 +20,11 @@ services:
     ports:
       - "3000:3000"
     environment:
-      DATABASE_URL: process.env.POSTGRES_URL
+      DATABASE_URL: postgres://zestuser:zestpass@postgres:5432/zestdb
+    depends_on:
+      - postgres
     command: >
-      sh -c "npx prisma migrate deploy && npx ts-node prisma/seed.ts && npm start"
+      sh -c "npx prisma migrate deploy && npm start"
+
+volumes:
+  postgres_data:
