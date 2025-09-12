@@ -406,7 +406,7 @@ const SlidingCart = ({ isOpen, onClose }: SlidingCartProps) => {
                     : "bg-gray-300 text-gray-500 cursor-not-allowed"
                 }`}
               >
-                Pay Now via BHIM UPI – ₹{(calculateTotal() || 0).toFixed(2)}
+                Confirm with Transaction Id
               </button>
             </>
           )}
