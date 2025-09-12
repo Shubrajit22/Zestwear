@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'react-hot-toast';
 import { MdClose } from 'react-icons/md';
 import { useCart } from './CartContextProvider';
+import QRCode from "react-qr-code";
 
 export interface CartItem {
   id: string;
@@ -24,15 +25,8 @@ export interface CartItem {
   };
   quantity: number;
   size: string;
-  price: number; // ✅ this is critical
+  price: number;
   sizeId?: string | null;
-}
-
-
-interface RazorpayResponse {
-  razorpay_payment_id: string;
-  razorpay_order_id: string;
-  razorpay_signature?: string;
 }
 
 interface SlidingCartProps {
@@ -42,17 +36,22 @@ interface SlidingCartProps {
 
 const SlidingCart = ({ isOpen, onClose }: SlidingCartProps) => {
   const { items: cartItems, clearCart, setCartItemsFromServer } = useCart() as {
-  items: CartItem[];
-  clearCart: () => void;
-  setCartItemsFromServer: (items: CartItem[]) => void;
-};
+    items: CartItem[];
+    clearCart: () => void;
+    setCartItemsFromServer: (items: CartItem[]) => void;
+  };
 
   const [loadingCart, setLoadingCart] = useState(false);
   const [processingPayment, setProcessingPayment] = useState(false);
+  const [showPaymentConfirmation, setShowPaymentConfirmation] = useState(false);
+  const [upiTransactionId, setUpiTransactionId] = useState('');
+  const [pendingOrderData, setPendingOrderData] = useState<any>(null);
   const [user, setUser] = useState<{ name: string; email: string; mobile: string } | null>(null);
   const [selectedAddress, setSelectedAddress] = useState('');
   const router = useRouter();
   const cartRef = useRef<HTMLDivElement>(null);
+
+  const upiId = "arijitb017@okicici";
 
   // Fetch user and cart when opened
   useEffect(() => {
@@ -91,28 +90,18 @@ const SlidingCart = ({ isOpen, onClose }: SlidingCartProps) => {
   };
 
   useEffect(() => {
-    const script = document.createElement('script');
-    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-    script.async = true;
-    document.body.appendChild(script);
-    return () => {
-      document.body.removeChild(script);
-    };
-  }, []);
-
-  useEffect(() => {
     const handleOutsideClick = (e: MouseEvent) => {
       if (cartRef.current && !cartRef.current.contains(e.target as Node)) {
         onClose();
       }
     };
-    if (isOpen) {
+    if (isOpen && !showPaymentConfirmation) {
       document.addEventListener('mousedown', handleOutsideClick);
     }
     return () => {
       document.removeEventListener('mousedown', handleOutsideClick);
     };
-  }, [isOpen]);
+  }, [isOpen, showPaymentConfirmation]);
 
   const handleUpdateQuantity = async (itemId: string, newQuantity: number) => {
     await fetch('/api/cart', {
@@ -124,14 +113,13 @@ const SlidingCart = ({ isOpen, onClose }: SlidingCartProps) => {
   };
 
   const handleRemoveItem = async (itemId: string) => {
-  const response = await fetch(`/api/cart?cartItemId=${itemId}`, {
-    method: 'DELETE',
-  });
-  if (response.ok) {
-    await fetchCartItems(); 
-  }
-};
-
+    const response = await fetch(`/api/cart?cartItemId=${itemId}`, {
+      method: 'DELETE',
+    });
+    if (response.ok) {
+      await fetchCartItems();
+    }
+  };
 
   const calculateTotal = () => {
     return cartItems.reduce((total, item) => {
@@ -144,92 +132,149 @@ const SlidingCart = ({ isOpen, onClose }: SlidingCartProps) => {
     }, 0);
   };
 
-  const handlePaymentSuccess = async (response: RazorpayResponse) => {
-    if (!selectedAddress) {
-      toast.error('Please select a shipping address.');
+  const handleBhimPayment = async () => {
+    if (!selectedAddress.trim()) {
+      toast.error("Please enter a shipping address.");
+      return;
+    }
+
+    const amount = calculateTotal();
+    
+    // Store order data for later use
+    const orderPayload = {
+      email: user?.email,
+      amount,
+      address: selectedAddress,
+      items: cartItems.map((item) => ({
+        name: item.product.name,
+        quantity: item.quantity,
+        price:
+          item.price ??
+          item.product.sizeOptions.find((s) => s.size === item.size)?.price ??
+          item.product.price ??
+          0,
+        size: item.size,
+        productId: item.product.id,
+        sizeId: item.sizeId || null,
+      })),
+    };
+
+    setPendingOrderData(orderPayload);
+    
+    // Create UPI payment link
+    const upiLink = `upi://pay?pa=${upiId}&pn=Zestware&am=${amount}&cu=INR&tn=Order%20Payment`;
+    
+    // Show payment confirmation modal
+    setShowPaymentConfirmation(true);
+    
+    // Open UPI app
+    window.location.href = upiLink;
+  };
+
+  const handlePaymentSuccess = async () => {
+    if (!upiTransactionId.trim()) {
+      toast.error("Please enter the UPI transaction ID");
       return;
     }
 
     setProcessingPayment(true);
-
-    const orderPayload = {
-      razorpay_payment_id: response.razorpay_payment_id,
-      razorpay_order_id: response.razorpay_order_id,
-      email: user?.email,
-      name: user?.name,
-      amount: calculateTotal(),
-      address: selectedAddress,
-      items: cartItems.map((item) => {
-        const finalPrice =
-          item.price ??
-          item.product.sizeOptions.find((s) => s.size === item.size)?.price ??
-          item.product.price ??
-          0;
-
-        return {
-          name: item.product.name,
-          quantity: item.quantity,
-          price: finalPrice,
-          size: item.size,
-          productId: item.product.id,
-          sizeId: item.sizeId || null,
-        };
-      }),
-    };
-
+    
     try {
-      const res = await fetch('/api/order', {
+      const orderPayloadWithUpi = {
+        ...pendingOrderData,
+        upiTransactionId: upiTransactionId,
+      };
+
+      const response = await fetch('/api/order', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(orderPayload),
+        body: JSON.stringify(orderPayloadWithUpi),
       });
 
-      if (res.ok) {
+      const data = await response.json();
+
+      if (response.ok) {
+        // Clear cart after successful order
         clearCart();
-        await fetchCartItems(); // just in case
-        setTimeout(() => {
-          setProcessingPayment(false);
-          onClose();
-          router.push('/orders');
-        }, 1500);
-      } else {
-        toast.error('Order failed.');
+        await fetchCartItems();
+        
+        toast.success("Order placed successfully!");
+        
+        // Reset states
+        setShowPaymentConfirmation(false);
+        setUpiTransactionId('');
+        setPendingOrderData(null);
         setProcessingPayment(false);
+        
+        // Close cart and navigate to orders
+        onClose();
+        router.push('/orders');
+      } else {
+        throw new Error(data.message || 'Failed to create order');
       }
-    } catch {
-      toast.error('Something went wrong.');
+    } catch (error) {
+      console.error('Order creation error:', error);
+      toast.error("Failed to place order. Please try again.");
       setProcessingPayment(false);
     }
   };
 
-  const handleRazorpayPayment = async () => {
-    const res = await fetch('/api/razorpay', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ amount: calculateTotal() }),
-    });
-    const data = await res.json();
-
-    const options = {
-      key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID!,
-      amount: data.amount,
-      currency: 'INR',
-      name: 'ZESTWARE',
-      description: 'Order Payment',
-      image: '/home/logo.png',
-      order_id: data.id,
-      handler: handlePaymentSuccess,
-      prefill: {
-        name: user?.name || 'Customer',
-        email: user?.email || '',
-        contact: user?.mobile || '',
-      },
-      theme: { color: '#000' },
-    };
-
-    const rzp = new window.Razorpay(options);
-    rzp.open();
+   const handlePaymentCancel = () => {
+    setShowPaymentConfirmation(false);
+    setUpiTransactionId('');
+    setPendingOrderData(null);
+    toast("Payment cancelled. Your cart items are saved.");
   };
+
+  if (showPaymentConfirmation) {
+    return (
+      <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-lg p-6 max-w-md w-full">
+          <h3 className="text-lg font-semibold mb-4">Payment Confirmation</h3>
+          <p className="text-sm text-gray-600 mb-4">
+            Please complete the payment in your UPI app and enter the transaction ID below to confirm your order.
+          </p>
+          
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              UPI Transaction ID / Reference Number
+            </label>
+            <input
+              type="text"
+              value={upiTransactionId}
+              onChange={(e) => setUpiTransactionId(e.target.value)}
+              placeholder="Enter UPI transaction ID"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-black"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              You can find this in your UPI app under transaction history
+            </p>
+          </div>
+
+          <div className="flex gap-3">
+            <button
+              onClick={handlePaymentSuccess}
+              disabled={!upiTransactionId.trim() || processingPayment}
+              className={`flex-1 py-2 px-4 rounded-md font-medium ${
+                upiTransactionId.trim() && !processingPayment
+                  ? 'bg-green-600 text-white hover:bg-green-700'
+                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              }`}
+            >
+              {processingPayment ? 'Processing...' : 'Confirm Payment'}
+            </button>
+            <button
+              onClick={handlePaymentCancel}
+              disabled={processingPayment}
+              className="flex-1 py-2 px-4 rounded-md font-medium bg-gray-200 text-gray-700 hover:bg-gray-300 disabled:opacity-50"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={`fixed inset-0 z-50 bg-black/50 transition-opacity duration-300 ${isOpen ? 'opacity-100 visible' : 'opacity-0 invisible'}`}>
@@ -341,8 +386,19 @@ const SlidingCart = ({ isOpen, onClose }: SlidingCartProps) => {
               />
               <p className="text-xs text-gray-500 mt-1">Please enter your full address to enable payment.</p>
 
+              {/* Show UPI QR + Link */}
+              {selectedAddress.trim() && (
+                <div className="mt-6 flex flex-col items-center">
+                  <QRCode
+                    value={`upi://pay?pa=${upiId}&pn=Zestware&am=${calculateTotal()}&cu=INR&tn=Order%20Payment`}
+                    size={180}
+                  />
+                  <p className="mt-2 text-xs text-gray-600">Scan QR with BHIM / UPI app</p>
+                </div>
+              )}
+
               <button
-                onClick={handleRazorpayPayment}
+                onClick={handleBhimPayment}
                 disabled={!selectedAddress.trim()}
                 className={`w-full mt-4 py-3 rounded transition-colors ${
                   selectedAddress.trim()
@@ -350,23 +406,12 @@ const SlidingCart = ({ isOpen, onClose }: SlidingCartProps) => {
                     : "bg-gray-300 text-gray-500 cursor-not-allowed"
                 }`}
               >
-                Pay Now – ₹{(calculateTotal() || 0).toFixed(2)}
+                Pay Now via BHIM UPI – ₹{(calculateTotal() || 0).toFixed(2)}
               </button>
             </>
           )}
         </div>
       </div>
-
-      {processingPayment && (
-        <div className="fixed inset-0 z-[999] flex flex-col items-center justify-center bg-black bg-opacity-70 backdrop-blur-md">
-          <div className="relative w-20 h-20">
-            <div className="absolute inset-0 rounded-full border-4 border-t-transparent border-white animate-spin"></div>
-            <div className="absolute inset-4 rounded-full border-4 border-t-transparent border-gray-400 animate-spin-slow"></div>
-          </div>
-          <p className="mt-6 text-white text-lg font-semibold tracking-wide">Processing your order...</p>
-          <p className="mt-1 text-gray-300 text-sm">Please wait, redirecting to your orders</p>
-        </div>
-      )}
     </div>
   );
 };

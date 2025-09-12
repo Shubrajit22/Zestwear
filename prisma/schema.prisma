@@ -69,19 +69,18 @@ model VerificationToken {
 }
 
 model Order {
-  id                  String       @id @default(cuid())
-  userId              String
-  status              String
-  createdAt           DateTime     @default(now())
-  updatedAt           DateTime     @updatedAt
-  shippingAddress     String
-  totalAmount         Float
-  paymentStatus       String
-  shippingStatus      String
-  razorpay_order_id   String?      
-  razorpay_payment_id String?     
-  user                User         @relation(fields: [userId], references: [id])
-  orderItems          OrderItem[]
+  id                String       @id @default(cuid())
+  userId            String
+  status            String
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+  shippingAddress   String
+  totalAmount       Float
+  paymentStatus     String
+  shippingStatus    String
+  upiTransactionId  String?      // ✅ NEW for BHIM UPI ref/UTR
+  user              User         @relation(fields: [userId], references: [id])
+  orderItems        OrderItem[]
 }
 
 model OrderItem {

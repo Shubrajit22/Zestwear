@@ -1,9 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
-import nodemailer from 'nodemailer';
-import { getNumericOrderId } from '@/lib/utils';
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import nodemailer from "nodemailer";
+import { getNumericOrderId } from "@/lib/utils";
 
-// ✅ Define a type for order items
 type OrderItem = {
   name: string;
   quantity: number;
@@ -13,9 +12,9 @@ type OrderItem = {
   productId: string;
 };
 
-// ✅ Setup mail transporter
+// Nodemailer config
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
+  service: "gmail",
   auth: {
     user: process.env.EMAIL_USER!,
     pass: process.env.EMAIL_PASS!,
@@ -25,256 +24,226 @@ const transporter = nodemailer.createTransport({
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-
-    const {
-      razorpay_payment_id,
-      razorpay_order_id,
-      email,
-      amount,
-      address,
-      items,
-    }: {
-      razorpay_payment_id: string;
-      razorpay_order_id: string;
+    const { email, amount, address, items, upiTransactionId }: {
       email: string;
       amount: number;
       address: string;
       items: OrderItem[];
+      upiTransactionId?: string;
     } = body;
 
-    if (!email || !razorpay_payment_id || !razorpay_order_id || !items || !address) {
-      return NextResponse.json({ message: 'Missing required fields' }, { status: 400 });
+    // Validate required fields
+    if (!email || !items || !address || items.length === 0) {
+      return NextResponse.json({ 
+        message: "Missing required fields. Email, items, and address are required." 
+      }, { status: 400 });
     }
 
+    // Validate UPI transaction ID
+    if (!upiTransactionId || upiTransactionId.trim() === '') {
+      return NextResponse.json({ 
+        message: "UPI Transaction ID is required for payment confirmation" 
+      }, { status: 400 });
+    }
+
+    // Find user
     const user = await prisma.user.findUnique({ where: { email } });
-
     if (!user) {
-      return NextResponse.json({ message: 'User not found' }, { status: 404 });
+      return NextResponse.json({ message: "User not found" }, { status: 404 });
     }
 
-    // ✅ Create order
-    const order = await prisma.order.create({
-      data: {
-        userId: user.id,
-        status: 'confirmed',
-        shippingAddress: address,
-        totalAmount: amount,
-        paymentStatus: 'paid',
-        shippingStatus: 'processing',
-        razorpay_order_id,
-        razorpay_payment_id,
-        orderItems: {
-          create: items.map((item: OrderItem) => ({
-            name: item.name,
-            quantity: item.quantity,
-            price: item.price,
-            size: item.size || '',
-            sizeId: item.sizeId || null,
-            productId: item.productId,
-          })),
-        },
-      },
+    // Check if UPI transaction ID already exists (prevent duplicate orders)
+    const existingOrder = await prisma.order.findFirst({
+      where: { upiTransactionId: upiTransactionId.trim() }
     });
 
-    // ✅ Clear cart
-    await prisma.cartItem.deleteMany({ where: { userId: user.id } });
+    if (existingOrder) {
+      return NextResponse.json({ 
+        message: "An order with this UPI transaction ID already exists" 
+      }, { status: 409 });
+    }
 
-    // ✅ Format email content
-    const itemList = items.map((item: OrderItem) =>
-      `<li>${item.name} (x${item.quantity}) - Size: ${item.size || 'N/A'} - ₹${item.price}</li>`
-    ).join('');
+    // Validate items and calculate total
+    let calculatedTotal = 0;
+    for (const item of items) {
+      if (!item.productId || !item.name || item.quantity <= 0 || item.price <= 0) {
+        return NextResponse.json({ 
+          message: "Invalid item data detected" 
+        }, { status: 400 });
+      }
+      calculatedTotal += item.price * item.quantity;
+    }
 
-const mailOptionsUser = {
-  from: `"Zestwear India" <${process.env.EMAIL_USER!}>`,
-  to: email,
-  subject: "Order Confirmation — Thank you for your purchase!",
-  html: `
-  <div style="font-family: system-ui,-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif; max-width:600px; margin:0 auto; padding:16px; color:#1f2d3a;">
-    <div style="text-align:center; padding-bottom:16px; border-bottom:1px solid #e2e8f0;">
-      <h1 style="margin:0; font-size:24px; color:#111;">Thank you for your order!</h1>
-      <p style="margin:4px 0 0; font-size:14px; color:#6b7280;">Order confirmation for <strong>#${getNumericOrderId(order.id)}</strong></p>
-    </div>
+    // Validate total amount matches
+    if (Math.abs(calculatedTotal - amount) > 0.01) {
+      return NextResponse.json({ 
+        message: "Order total mismatch detected" 
+      }, { status: 400 });
+    }
 
-    <section style="margin-top:24px;">
-      <p style="margin:0 0 8px; font-size:16px;">Hi ${user.name || "Customer"},</p>
-      <p style="margin:0 0 16px; font-size:14px; line-height:1.4;">
-        Thanks for shopping with us. We’re excited to let you know that we’ve received your order and it's now being processed. Below are the details:
-      </p>
-    </section>
+    // Create order with transaction
+    const order = await prisma.$transaction(async (prisma) => {
+      // Create the order
+      const newOrder = await prisma.order.create({
+        data: {
+          userId: user.id,
+          status: "confirmed",
+          shippingAddress: address,
+          totalAmount: amount,
+          paymentStatus: "paid", // Since we have UPI transaction ID
+          shippingStatus: "processing",
+          upiTransactionId: upiTransactionId.trim(),
+          orderItems: {
+            create: items.map((item) => ({
+              name: item.name,
+              quantity: item.quantity,
+              price: item.price,
+              size: item.size || "",
+              sizeId: item.sizeId || null,
+              productId: item.productId,
+            })),
+          },
+        },
+        include: {
+          orderItems: true,
+        },
+      });
 
-    <section style="margin-top:8px;">
-      <h2 style="font-size:18px; margin-bottom:8px; color:#111;">Order Summary</h2>
-      <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse; margin-bottom:16px;">
-        <thead>
-          <tr>
-            <th align="left" style="padding:8px; border-bottom:1px solid #e2e8f0; font-weight:600;">Item</th>
-            <th align="center" style="padding:8px; border-bottom:1px solid #e2e8f0; font-weight:600;">Qty</th>
-            <th align="right" style="padding:8px; border-bottom:1px solid #e2e8f0; font-weight:600;">Price</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${items
-            .map(
-              (item: OrderItem) => `
-            <tr>
-              <td style="padding:8px; border-bottom:1px solid #f1f5f9;">
-                ${item.name} ${item.size ? `(${item.size})` : ""}
-              </td>
-              <td align="center" style="padding:8px; border-bottom:1px solid #f1f5f9;">
-                ${item.quantity}
-              </td>
-              <td align="right" style="padding:8px; border-bottom:1px solid #f1f5f9;">
-                ₹${item.price.toLocaleString("en-IN")}
-              </td>
-            </tr>`
-            )
-            .join("")}
-        </tbody>
-        <tfoot>
-          <tr>
-            <td colspan="2" align="right" style="padding:8px; font-weight:600; border-top:1px solid #e2e8f0;">Total</td>
-            <td align="right" style="padding:8px; font-weight:600; border-top:1px solid #e2e8f0;">
-              ₹${amount.toLocaleString("en-IN")}
-            </td>
-          </tr>
-        </tfoot>
-      </table>
+      // Clear user's cart
+      await prisma.cartItem.deleteMany({ 
+        where: { userId: user.id } 
+      });
 
-      <div style="display:flex; flex-wrap:wrap; gap:16px; margin-bottom:24px;">
-        <div style="flex:1; min-width:200px;">
-          <p style="margin:0 0 4px; font-size:14px; font-weight:600;">Shipping Address</p>
-          <p style="margin:0; font-size:14px; line-height:1.4;">
-            ${address}
+      return newOrder;
+    });
+
+    // Prepare email content
+    const orderItemsList = items
+      .map((i) => `<li>${i.name} ${i.size ? `(${i.size})` : ''} x${i.quantity} - ₹${i.price.toFixed(2)}</li>`)
+      .join("");
+
+    // Send confirmation email to customer
+    const mailOptionsUser = {
+      from: `"Zestwear India" <${process.env.EMAIL_USER!}>`,
+      to: email,
+      subject: `Order Confirmation #${getNumericOrderId(order.id)} - Thank you for your purchase!`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #333;">Order Confirmation</h2>
+          <p>Hi ${user.name || "Customer"},</p>
+          <p>Thank you for your order! Your payment has been confirmed and your order is being processed.</p>
+          
+          <div style="background-color: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h3 style="margin-top: 0;">Order Details</h3>
+            <p><strong>Order ID:</strong> #${getNumericOrderId(order.id)}</p>
+            <p><strong>Total Amount:</strong> ₹${amount.toLocaleString("en-IN")}</p>
+            <p><strong>Payment Status:</strong> Paid (UPI Ref: ${upiTransactionId})</p>
+            <p><strong>Shipping Status:</strong> Processing</p>
+          </div>
+
+          <div style="margin: 20px 0;">
+            <h3>Items Ordered:</h3>
+            <ul style="list-style-type: none; padding: 0;">
+              ${orderItemsList}
+            </ul>
+          </div>
+
+          <div style="margin: 20px 0;">
+            <h3>Shipping Address:</h3>
+            <p style="background-color: #f9f9f9; padding: 10px; border-radius: 4px;">
+              ${address}
+            </p>
+          </div>
+
+          <p>We'll send you another email with tracking information once your order has been shipped.</p>
+          <p>Thank you for shopping with us!</p>
+          
+          <p style="color: #666; font-size: 14px;">
+            Best regards,<br>
+            Zestwear India Team
           </p>
         </div>
-        <div style="flex:1; min-width:200px;">
-          <p style="margin:0 0 4px; font-size:14px; font-weight:600;">Order ID</p>
-          <p style="margin:0; font-size:14px;">
-            <strong>#${getNumericOrderId(order.id)}</strong>
+      `,
+    };
+
+    // Send notification email to business
+    const mailOptionsBusiness = {
+      from: `"Zestwear India" <${process.env.EMAIL_USER!}>`,
+      to: process.env.BUSINESS_EMAIL!,
+      subject: `New Order Received - #${getNumericOrderId(order.id)} (₹${amount.toLocaleString("en-IN")})`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #333;">New Order Received</h2>
+          
+          <div style="background-color: #e8f5e8; padding: 15px; border-radius: 8px; margin: 20px 0;">
+            <h3 style="margin-top: 0; color: #2d5a2d;">Order Summary</h3>
+            <p><strong>Order ID:</strong> #${getNumericOrderId(order.id)}</p>
+            <p><strong>Customer:</strong> ${user.name || 'N/A'} (${email})</p>
+            <p><strong>Total:</strong> ₹${amount.toLocaleString("en-IN")}</p>
+            <p><strong>UPI Transaction ID:</strong> ${upiTransactionId}</p>
+            <p><strong>Payment Status:</strong> PAID ✅</p>
+            <p><strong>Order Time:</strong> ${new Date().toLocaleString("en-IN")}</p>
+          </div>
+
+          <div style="margin: 20px 0;">
+            <h3>Items:</h3>
+            <ul>
+              ${orderItemsList}
+            </ul>
+          </div>
+
+          <div style="background-color: #f9f9f9; padding: 15px; border-radius: 8px;">
+            <h3 style="margin-top: 0;">Shipping Address:</h3>
+            <p>${address}</p>
+          </div>
+
+          <p style="color: #666; margin-top: 30px;">
+            Please process this order and update the shipping status accordingly.
           </p>
         </div>
-      </div>
+      `,
+    };
 
-      <p style="margin:0 0 16px; font-size:14px;">
-        If you have any questions or need assistance, reply to this email or contact our support team at <a href="mailto:zestwearindia.info@gmail.com" style="color:#2563eb; text-decoration:none;">support@yourdomain.com</a>.
-      </p>
-    </section>
+    try {
+      // Send emails
+      await Promise.all([
+        transporter.sendMail(mailOptionsUser),
+        transporter.sendMail(mailOptionsBusiness)
+      ]);
+      console.log('Order confirmation emails sent successfully');
+    } catch (emailError) {
+      console.error('Error sending emails:', emailError);
+      // Don't fail the order creation if email fails
+    }
 
-    <div style="padding:16px; background:#f9f9fb; border-radius:8px; margin-top:16px; font-size:12px; color:#6b7280;">
-      <p style="margin:0;">
-        <strong>Note:</strong> This is an automated confirmation. Please retain this email for your records.
-      </p>
-    </div>
+    return NextResponse.json({ 
+      message: "Order placed successfully",
+      orderId: getNumericOrderId(order.id),
+      order: {
+        id: order.id,
+        status: order.status,
+        totalAmount: order.totalAmount,
+        paymentStatus: order.paymentStatus,
+        shippingStatus: order.shippingStatus,
+        upiTransactionId: order.upiTransactionId,
+        createdAt: order.createdAt
+      }
+    }, { status: 201 });
 
-    <footer style="margin-top:32px; text-align:center; font-size:12px; color:#9ca3af;">
-      <p style="margin:4px 0;">© ${new Date().getFullYear()} Your Brand Name. All rights reserved.</p>
-      <p style="margin:4px 0;">123 Business St, City, State ZIP</p>
-    </footer>
-  </div>
-  `,
-};
-
-const mailOptionsBusiness = {
-  from: `"Zestwear India" <${process.env.EMAIL_USER!}>`,
-  to: process.env.BUSINESS_EMAIL!,
-  subject: `New Order Received — #${getNumericOrderId(order.id)}`,
-  html: `
-  <div style="font-family: system-ui,-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif; max-width:700px; margin:0 auto; padding:20px; color:#1f2d3a;">
-    <div style="border-bottom:1px solid #e2e8f0; padding-bottom:12px; margin-bottom:16px;">
-      <h2 style="margin:0; font-size:22px;">New Order Received</h2>
-      <p style="margin:4px 0 0; font-size:14px;">
-        Order ID: <strong>#${getNumericOrderId(order.id)}</strong> — placed by <strong>${email}</strong>
-      </p>
-    </div>
-
-    <section style="margin-bottom:16px;">
-      <p style="margin:0 0 8px; font-size:14px;">
-        A new order has been placed. Below are the details:
-      </p>
-      <div style="display:flex; flex-wrap:wrap; gap:16px; font-size:14px;">
-        <div style="flex:1; min-width:220px;">
-          <p style="margin:4px 0; font-weight:600;">Customer Email</p>
-          <p style="margin:0;">${email}</p>
-        </div>
-        <div style="flex:1; min-width:220px;">
-          <p style="margin:4px 0; font-weight:600;">Order ID</p>
-          <p style="margin:0;">#${getNumericOrderId(order.id)}</p>
-        </div>
-        <div style="flex:1; min-width:220px;">
-          <p style="margin:4px 0; font-weight:600;">Total Amount</p>
-          <p style="margin:0;">₹${amount.toLocaleString("en-IN")}</p>
-        </div>
-      </div>
-    </section>
-
-    <section style="margin-bottom:20px;">
-      <h3 style="margin:0 0 8px; font-size:18px;">Order Summary</h3>
-      <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse; margin-bottom:16px;">
-        <thead>
-          <tr>
-            <th align="left" style="padding:10px; border-bottom:1px solid #e2e8f0; font-weight:600;">Item</th>
-            <th align="center" style="padding:10px; border-bottom:1px solid #e2e8f0; font-weight:600;">Qty</th>
-            <th align="right" style="padding:10px; border-bottom:1px solid #e2e8f0; font-weight:600;">Price</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${items
-            .map(
-              (item: any) => `
-            <tr>
-              <td style="padding:10px; border-bottom:1px solid #f1f5f9;">
-                ${item.name} ${item.size ? `(${item.size})` : ""}
-              </td>
-              <td align="center" style="padding:10px; border-bottom:1px solid #f1f5f9;">
-                ${item.quantity}
-              </td>
-              <td align="right" style="padding:10px; border-bottom:1px solid #f1f5f9;">
-                ₹${item.price.toLocaleString("en-IN")}
-              </td>
-            </tr>`
-            )
-            .join("")}
-        </tbody>
-        <tfoot>
-          <tr>
-            <td colspan="2" align="right" style="padding:10px; font-weight:600; border-top:1px solid #e2e8f0;">Grand Total</td>
-            <td align="right" style="padding:10px; font-weight:600; border-top:1px solid #e2e8f0;">
-              ₹${amount.toLocaleString("en-IN")}
-            </td>
-          </tr>
-        </tfoot>
-      </table>
-    </section>
-
-    <section style="margin-bottom:16px;">
-      <h3 style="margin:0 0 8px; font-size:16px;">Shipping Address</h3>
-      <p style="margin:0; font-size:14px; line-height:1.4;">${address}</p>
-    </section>
-
-    <div style="padding:14px; background:#f3f4f6; border-radius:8px; font-size:12px; color:#6b7280;">
-      <p style="margin:0;">
-        Quick action: <strong><a href="admin/orders/${order.id}" style="color:#2563eb; text-decoration:none;">View in admin dashboard</a></strong>
-      </p>
-    </div>
-
-    <footer style="margin-top:32px; font-size:12px; color:#9ca3af; text-align:center;">
-      <p style="margin:4px 0;">This notification was generated automatically.</p>
-    </footer>
-  </div>
-  `,
-};
-
-    // ✅ Send emails
-    await transporter.sendMail(mailOptionsUser);
-    await transporter.sendMail(mailOptionsBusiness);
-
-    return NextResponse.json({ message: 'Order placed successfully', order });
   } catch (error: unknown) {
-    console.error('ORDER ERROR:', error);
-    const errMsg = error instanceof Error ? error.message : 'Unknown error';
-    return NextResponse.json(
-      { message: 'Internal Server Error', error: errMsg },
-      { status: 500 }
-    );
+    console.error("ORDER CREATION ERROR:", error);
+    
+    // Handle Prisma unique constraint violations
+    if (error instanceof Error && error.message.includes('Unique constraint')) {
+      return NextResponse.json({ 
+        message: "Order with this transaction ID already exists" 
+      }, { status: 409 });
+    }
+    
+    const errMsg = error instanceof Error ? error.message : "Unknown error occurred";
+    return NextResponse.json({ 
+      message: "Failed to create order. Please try again.",
+      error: process.env.NODE_ENV === 'development' ? errMsg : undefined
+    }, { status: 500 });
   }
 }
