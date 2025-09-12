@@ -51,7 +51,7 @@ const SlidingCart = ({ isOpen, onClose }: SlidingCartProps) => {
   const router = useRouter();
   const cartRef = useRef<HTMLDivElement>(null);
 
-  const upiId = "arijitb017@okicici";
+  const upiId = "upi";
 
   // Fetch user and cart when opened
   useEffect(() => {
