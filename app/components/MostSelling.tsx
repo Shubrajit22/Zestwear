@@ -1,8 +1,9 @@
 "use client";
 
-import Link from "next/link";
+import { useState, useEffect } from "react";
 import Image from "next/image";
-import { twMerge } from "tailwind-merge";
+import Link from "next/link";
+import { motion, AnimatePresence } from "framer-motion";
 import { FaStar, FaStarHalfAlt, FaRegStar } from "react-icons/fa";
 
 export interface Product {
@@ -12,16 +13,15 @@ export interface Product {
   mrpPrice: number | null;
   price: number;
   rating: number | null;
-  reviewCount?: number;
 }
 
 const Star = ({ filled }: { filled: "full" | "half" | "empty" }) => {
-  if (filled === "full") return <FaStar className="text-xs sm:text-sm" />;
-  if (filled === "half") return <FaStarHalfAlt className="text-xs sm:text-sm" />;
-  return <FaRegStar className="text-xs sm:text-sm" />;
+  if (filled === "full") return <FaStar className="text-yellow-500" />;
+  if (filled === "half") return <FaStarHalfAlt className="text-yellow-500" />;
+  return <FaRegStar className="text-gray-300" />;
 };
 
-function renderStars(rating: number) {
+function renderStars(rating: number | null) {
   const avg = rating || 0;
   const fullStars = Math.floor(avg);
   const remainder = avg - fullStars;
@@ -29,7 +29,7 @@ function renderStars(rating: number) {
   const emptyStars = 5 - fullStars - (hasHalf ? 1 : 0);
 
   return (
-    <>
+    <div className="flex items-center gap-1 text-sm">
       {[...Array(fullStars)].map((_, i) => (
         <Star key={`full-${i}`} filled="full" />
       ))}
@@ -37,93 +37,105 @@ function renderStars(rating: number) {
       {[...Array(emptyStars)].map((_, i) => (
         <Star key={`empty-${i}`} filled="empty" />
       ))}
-    </>
+    </div>
   );
 }
 
-export default function MostSelling({ products }: { products: Product[] }) {
+export default function MostSellingSlider({ products }: { products: Product[] }) {
+  const [index, setIndex] = useState(0);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Sort products by rating descending
+  const sortedProducts = [...products].sort(
+    (a, b) => (b.rating || 0) - (a.rating || 0)
+  );
+
+  // Detect screen size
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  // Auto-slide
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setIndex((prev) => (prev + 1) % sortedProducts.length);
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [sortedProducts.length]);
+
+  // Determine visible products
+  let visibleProducts: Product[];
+  if (isMobile) {
+    // Mobile: show 1 random product
+    visibleProducts = [sortedProducts[Math.floor(Math.random() * sortedProducts.length)]];
+  } else {
+    // Desktop: always show 3 products in a row
+    visibleProducts = [];
+    for (let i = 0; i < 3; i++) {
+      visibleProducts.push(sortedProducts[(index + i) % sortedProducts.length]);
+    }
+  }
+
   return (
-    <div className="bg-white pb-20 pt-4 px-4 sm:px-8">
-      <h2 className="text-2xl font-semibold text-center text-slate-900 mb-10">
-        Our Most Selling Products
+    <section className="w-full bg-white py-12 overflow-hidden">
+      <h2 className="text-4xl md:text-5xl font-bold text-center mb-8 text-black">
+        Most Selling Products
       </h2>
 
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(160px,1fr))] gap-6">
-        {products.length > 0 ? (
-          products.map((product) => {
-            const reviewCount = product.reviewCount ?? 0;
-            const avgRating = product.rating ?? 0;
-            const displayRating = reviewCount > 0 ? avgRating.toFixed(1) : null;
-            const ratingLabel =
-              reviewCount > 0
-                ? `${displayRating} out of 5 stars · ${reviewCount} review${reviewCount > 1 ? "s" : ""}`
-                : "No reviews yet";
+      <div className="flex justify-center gap-4 md:gap-6 flex-wrap md:flex-nowrap">
+        {visibleProducts.map((product) => (
+          <motion.div
+            key={product.id}
+            initial={{ opacity: 0, y: 20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -20, scale: 0.95 }}
+            transition={{ duration: 0.6 }}
+            className="bg-white rounded-xl shadow-lg overflow-hidden w-[90%] sm:w-[45%] md:w-[30%]"
+          >
+            <div className="relative w-full h-[250px] md:h-[200px]">
+              <Image
+                src={product.imageUrl}
+                alt={product.name}
+                fill
+                className="object-contain"
+                priority
+              />
+            </div>
 
-            return (
-              <Link
-                key={product.id}
-                href={`/product/${product.id}`}
-                aria-label={`View ${product.name} — ${ratingLabel}`}
-                className="group"
-              >
-                <div className="w-full max-w-[220px] mx-auto rounded-lg shadow-md hover:shadow-lg flex flex-col items-center cursor-pointer p-4 transition bg-white">
-                  <div className="aspect-square w-full rounded-lg overflow-hidden mb-4">
-                    <Image
-                      src={product.imageUrl}
-                      alt={product.name}
-                      width={500}
-                      height={500}
-                      className="object-cover w-full h-full"
-                    />
-                  </div>
-                  <h3 className="text-base font-semibold text-center mb-1 text-black line-clamp-2 h-[3rem]">
-                    {product.name}
-                  </h3>
-                  <div className="flex flex-col items-center mb-2">
-                    <div
-                      role="img"
-                      aria-label={ratingLabel}
-                      className={twMerge(
-                        "flex items-center space-x-1 text-sm mb-1",
-                        reviewCount > 0 ? "text-yellow-500" : "text-gray-300"
-                      )}
-                    >
-                      {renderStars(avgRating)}
-                    </div>
-                    <div className="text-xs">
-                      {reviewCount > 0 ? (
-                        <span className="inline-flex items-center gap-1 bg-gray-100 text-gray-800 px-2 py-1 rounded-full">
-                          <span className="text-yellow-500">★</span>
-                          <span>{displayRating}</span>
-                          <span className="text-gray-500">
-                            ({reviewCount} {reviewCount > 1 ? "reviews" : "review"})
-                          </span>
-                        </span>
-                      ) : (
-                        <span className="text-gray-500">No reviews yet</span>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex justify-center items-center gap-3">
-                    {product.mrpPrice && (
-                      <p className="line-through text-gray-400 text-sm">
-                        ₹{product.mrpPrice.toLocaleString("en-IN")}
-                      </p>
-                    )}
-                    <p className="text-lg font-bold text-black">
-                      ₹{product.price.toLocaleString("en-IN")}
-                    </p>
-                  </div>
-                </div>
+            <div className="p-3 text-center">
+              <h3 className="text-lg md:text-xl font-semibold text-gray-800">
+                {product.name}
+              </h3>
+              <div className="flex justify-center gap-1 items-center mt-1">
+                {renderStars(product.rating)}
+                {product.rating && (
+                  <span className="text-sm text-gray-500">
+                    {product.rating.toFixed(1)}
+                  </span>
+                )}
+              </div>
+              <div className="flex justify-center gap-2 items-center mt-1">
+                {product.mrpPrice && (
+                  <span className="line-through text-gray-400 text-base md:text-lg">
+                    ₹{product.mrpPrice.toLocaleString("en-IN")}
+                  </span>
+                )}
+                <span className="text-lg md:text-xl font-bold text-black">
+                  ₹{product.price.toLocaleString("en-IN")}
+                </span>
+              </div>
+              <Link href={`/product/${product.id}`}>
+                <button className="mt-3 px-4 py-2 text-sm md:text-base font-semibold uppercase border border-black bg-black text-white hover:bg-white hover:text-black transition-all duration-300">
+                  Shop Now
+                </button>
               </Link>
-            );
-          })
-        ) : (
-          <p className="col-span-full text-center text-base text-black">
-            No products available.
-          </p>
-        )}
+            </div>
+          </motion.div>
+        ))}
       </div>
-    </div>
+    </section>
   );
 }

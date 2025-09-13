@@ -56,59 +56,61 @@ export default function UploadsAdmin() {
     fetchFiles();
   }, []);
 
-  // Filter files by search term (case-insensitive)
   const filteredFiles = files.filter((file) =>
     file.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  if (loading) return <p className="text-center py-10">Loading uploaded files...</p>;
-
-  if (files.length === 0) return <p className="text-center py-10">No uploaded files found.</p>;
+  if (loading) return <p className="text-center py-10 text-white">Loading uploaded files...</p>;
+  if (files.length === 0) return <p className="text-center py-10 text-white">No uploaded files found.</p>;
 
   return (
-    <div className="p-4 max-w-5xl mx-auto mt-30">
-      <h1 className="text-3xl font-bold mb-6 text-center">Uploaded Files Management</h1>
+    <div className="min-h-screen bg-black text-white p-4 mt-10">
+      <div className="max-w-5xl mx-auto mt-10">
+        <h1 className="text-3xl font-bold mb-6 text-center">Uploaded Files Management</h1>
 
-      {/* Search input */}
-      <div className="mb-6 flex justify-center">
-        <input
-          type="text"
-          placeholder="Search files..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="border border-gray-300 rounded px-4 py-2 w-full max-w-md focus:outline-none focus:ring-2 focus:ring-yellow-500"
-        />
-      </div>
-
-      {filteredFiles.length === 0 ? (
-        <p className="text-center py-10">No files match your search.</p>
-      ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
-          {filteredFiles.map((file) => (
-            <div key={file} className="border rounded shadow p-2 flex flex-col items-center gap-3">
-              <div className="w-full h-32 relative">
-                <Image
-                  src={`/uploads/${file}`}
-                  alt={file}
-                  fill
-                  sizes="(max-width: 768px) 100vw, 200px"
-                  className="object-contain rounded"
-                />
-              </div>
-              <p className="text-xs truncate max-w-full">{file}</p>
-              <button
-                disabled={deleting === file}
-                onClick={() => handleDelete(file)}
-                className={`px-3 py-1 rounded text-white cursor-pointer ${
-                  deleting === file ? 'bg-gray-400 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700'
-                }`}
-              >
-                {deleting === file ? 'Deleting...' : 'Delete'}
-              </button>
-            </div>
-          ))}
+        {/* Search input */}
+        <div className="mb-6 flex justify-center">
+          <input
+            type="text"
+            placeholder="Search files..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="border border-gray-700 rounded px-4 py-2 w-full max-w-md bg-gray-900 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+          />
         </div>
-      )}
+
+        {filteredFiles.length === 0 ? (
+          <p className="text-center py-10">No files match your search.</p>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
+            {filteredFiles.map((file) => (
+              <div key={file} className="border border-gray-700 rounded shadow p-2 flex flex-col items-center gap-3 bg-gray-900">
+                <div className="w-full h-32 relative">
+                  <Image
+                    src={`/uploads/${file}`}
+                    alt={file}
+                    fill
+                    sizes="(max-width: 768px) 100vw, 200px"
+                    className="object-contain rounded"
+                  />
+                </div>
+                <p className="text-xs truncate max-w-full">{file}</p>
+                <button
+                  disabled={deleting === file}
+                  onClick={() => handleDelete(file)}
+                  className={`px-3 py-1 rounded text-white cursor-pointer transition ${
+                    deleting === file
+                      ? 'bg-gray-600 cursor-not-allowed'
+                      : 'bg-red-600 hover:bg-red-700'
+                  }`}
+                >
+                  {deleting === file ? 'Deleting...' : 'Delete'}
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

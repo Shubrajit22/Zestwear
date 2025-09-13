@@ -49,7 +49,7 @@ export default function UniformCategoryPage() {
   };
 
   return (
-    <div className="min-h-screen  text-white flex justify-center items-center px-4 py-10 mt-10">
+    <div className="min-h-screen bg-black text-white flex justify-center items-center px-4 py-10 mt-10">
       <div className="flex flex-col lg:flex-row items-center justify-center gap-10 w-full max-w-7xl">
 
         {/* Left Side: Filters */}

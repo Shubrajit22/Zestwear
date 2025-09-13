@@ -128,7 +128,7 @@ useEffect(() => {
   const clearSearch = () => setQuery("");
 
   return (
-    <div className="p-6 min-h-screen bg-gray-50 mt-20">
+    <div className="p-6 min-h-screen bg-white mt-20">
       <div className="max-w-[1200px] mx-auto">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
           <h2 className="text-3xl font-bold text-black">Manage Users</h2>

@@ -38,10 +38,7 @@ export default function ProductGridClient({ products }: { products: Product[] })
 
   return (
     <div className="min-h-screen px-3 sm:px-6">
-      {/* Heading */}
-      <div className="mt-2 mb-4">
-        <h2 className="text-xl font-semibold text-center text-slate-900">Top Sellers</h2>
-      </div>
+      
 
       {/* Product grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
@@ -67,7 +64,7 @@ export default function ProductGridClient({ products }: { products: Product[] })
                 </div>
 
                 {/* Name */}
-                <h3 className="text-sm font-semibold text-center mb-1 line-clamp-2">
+                <h3 className="text-sm font-semibold text-center mb-1 overflow-hidden text-ellipsis text-black">
                   {product.name}
                 </h3>
 

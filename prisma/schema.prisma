@@ -190,6 +190,8 @@ enum ProductType {
   SPORTS
   CASUAL
   FORMAL
+  SHIRT      
+  PANTS 
 }
 
 enum ProductCategoryEnum {
@@ -200,4 +202,5 @@ enum ProductCategoryEnum {
   CUSTOMISE
   UNIFORM
   SHOES
+  FORMALS
 }

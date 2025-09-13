@@ -1,10 +1,10 @@
 import HeroSection from "./components/HeroSection";
 import MostSelling, { Product } from "./components/MostSelling";
 import { CategoryGrid } from './components/CategoryGrid';
-import Testimonials from "./components/Testimonials";
 import CustomizeCard from "./components/Customise";
 import ScrollAnimationWrapper from "./components/ScrollAnimationWrapper";
 import { prisma } from '@/lib/prisma';
+import { WhyChooseUs, VideoStory, EditorialBanner } from "./components/extra-sections";
 
 export default async function Home() {
   let mostSellingProducts: Product[] = [];
@@ -12,9 +12,7 @@ export default async function Home() {
   try {
     const products = await prisma.product.findMany({
       orderBy: {
-        reviews: {
-          _count: 'desc', // sort by most reviewed first
-        },
+        reviews: { _count: 'desc' },
       },
       take: 6,
       include: { reviews: true },
@@ -28,8 +26,7 @@ export default async function Home() {
       price: p.price,
       rating:
         p.reviews.length > 0
-          ? p.reviews.reduce((sum, r) => sum + (r.rating || 0), 0) /
-            p.reviews.length
+          ? p.reviews.reduce((sum, r) => sum + (r.rating || 0), 0) / p.reviews.length
           : null,
       reviewCount: p.reviews.length,
     }));
@@ -38,51 +35,58 @@ export default async function Home() {
   }
 
   return (
-    <>
-            <main className="text-white bg-black relative">
-        {/* Background gradients */}
-        <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-gradient-to-br from-pink-500/20 via-purple-500/20 to-transparent rounded-full blur-3xl"></div>
-        <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-gradient-to-tr from-blue-500/20 via-cyan-500/20 to-transparent rounded-full blur-3xl"></div>
+   <main className="relative w-full bg-black text-white">
+  {/* Hero Section */}
+  <section className="relative w-full min-h-screen flex items-center">
+    <HeroSection />
+  </section>
+ <div className="h-0.5 sm:h-0.5"></div> {/* space after Hero */}
 
-        {/* Hero */}
-        <div className="w-full min-h-screen flex items-center relative z-10">
-          <div className="w-full flex flex-col md:flex-row justify-between items-center gap-12">
-            <HeroSection />
-          </div>
-        </div>
-      </main>
+  {/* Product Categories */}
+  <ScrollAnimationWrapper>
+    <section id="product-categories" className="bg-white text-black py-16 px-6 md:px-20">
+      <h2 className="text-4xl font-bold text-center mb-12">Product Categories</h2>
+      <CategoryGrid />
+    </section>
+  </ScrollAnimationWrapper>
+  <div className="h-0.5 sm:h-0.5"></div> {/* space after Product Categories */}
 
+  {/* Why Choose Us */}
+  <ScrollAnimationWrapper delay={0.2}>
+    <section className="bg-black text-white ">
+      <WhyChooseUs />
+    </section>
+  </ScrollAnimationWrapper>
+  <div className="h-0.5 sm:h-0.5"></div> {/* space after Why Choose Us */}
 
-      {/* Categories */}
-      <ScrollAnimationWrapper>
-        <section id="product-categories" className="w-full bg-white text-black py-12 px-4 md:px-20">
-          <h1 className="text-center text-4xl font-bold mb-8">Product Categories</h1>
-          <CategoryGrid />
-        </section>
-      </ScrollAnimationWrapper>
+  {/* Customize Your Product */}
+  <ScrollAnimationWrapper delay={0.4}>
+    <section className="bg-black text-white ">
+      <CustomizeCard />
+    </section>
+  </ScrollAnimationWrapper>
 
-      {/* Customize */}
-      <main className="text-white bg-black relative">
-      <ScrollAnimationWrapper delay={0.2}>
-        <section>
-          <CustomizeCard />
-        </section>
-      </ScrollAnimationWrapper>
-      </main>
+  {/* Editorial Banner */}
+  <ScrollAnimationWrapper delay={0.8}>
+    <section className="bg-white text-black ">
+      <EditorialBanner />
+    </section>
+  </ScrollAnimationWrapper>
 
-      {/* Most Reviewed */}
-      <ScrollAnimationWrapper delay={0.4}>
-        <section>
-          <MostSelling products={mostSellingProducts} />
-        </section>
-      </ScrollAnimationWrapper>
+  {/* Most Selling Products */}
+  <ScrollAnimationWrapper delay={0.6}>
+    <section className=" text-white ">
+      <MostSelling products={mostSellingProducts} />
+    </section>
+  </ScrollAnimationWrapper>
 
-      {/* Testimonials */}
-      <ScrollAnimationWrapper delay={0.6}>
-        <section>
-          <Testimonials />
-        </section>
-      </ScrollAnimationWrapper>
-    </>
+  {/* Video Storytelling */}
+  <ScrollAnimationWrapper delay={1}>
+    <section className="bg-black text-white ">
+      <VideoStory />
+    </section>
+  </ScrollAnimationWrapper>
+</main>
+
   );
 }

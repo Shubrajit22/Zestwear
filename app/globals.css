@@ -1,22 +1,27 @@
 @import "tailwindcss";
-@import "tw-animate-css";
+@import "tw-animate-css"; /* Ensure this exists and is installed */
 
-
-@import "tw-animate-css"; /* Make sure this exists and is installed */
 @layer utilities {
   .animate-spin-slow {
     animation: spin 3s linear infinite;
   }
+
+  .bg-custom {
+    background-color: #000000; /* single background color */
+  }
+
+  .text-custom-foreground {
+    color: var(--foreground);
+  }
 }
+
 :root {
-  --gradient-start: #ffffff;
-  --gradient-end: #f0f0f0;
   --radius: 0.625rem;
-  --background: oklch(1 0 0);
+  --background: #ffffff; /* single background */
   --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
+  --card: #000000;
   --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
+  --popover: #000000;
   --popover-foreground: oklch(0.145 0 0);
   --primary: oklch(0.205 0 0);
   --primary-foreground: oklch(0.985 0 0);
@@ -24,41 +29,75 @@
   --input: oklch(0.922 0 0);
   --ring: oklch(0.708 0 0);
 }
+
 @keyframes pop {
   0% { transform: scale(1); }
   50% { transform: scale(1.3); }
   100% { transform: scale(1); }
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --gradient-start: #000000;
-    --gradient-end: #333333;
-  }
-}
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-poppins);
 }
 
 body {
   font-family: var(--font-inter);
-}
-
-body {
-  background: linear-gradient(to bottom right, var(--gradient-start), var(--gradient-end));
+  background-color: var(--background);
   transition: background 0.3s ease, color 0.3s ease;
+
+  /* Firefox scrollbar */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0,0,0,0.7) transparent;
 }
 
-@layer utilities {
-  .bg-black-gradient {
-    background: linear-gradient(to bottom right, #000000, #333333);
-  }
+/* Chrome, Edge, Safari */
+body::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
 
-  .bg-white-gradient {
-    background: linear-gradient(to bottom right, #ffffff, #f0f0f0);
-  }
+body::-webkit-scrollbar-track {
+  background: transparent;
+}
 
-  .text-custom-foreground {
-    color: var(--foreground);
+body::-webkit-scrollbar-thumb {
+  background-color: rgba(0,0,0,0.7);
+  border-radius: 10px;
+  border: 1px solid transparent;
+}
+
+body::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(0,0,0,0.9);
+}
+
+/* Apply to all scrollable elements */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0,0,0,0.7) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: rgba(0,0,0,0.7);
+  border-radius: 10px;
+  border: 1px solid transparent;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(0,0,0,0.9);
+}
+
+/* Hide scrollbar on mobile */
+@media (pointer: coarse) {
+  *::-webkit-scrollbar {
+    display: none;
   }
 }

@@ -5,7 +5,6 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaStar, FaRegStar } from "react-icons/fa";
 
-
 const testimonials = [
   {
     name: 'Himadri Das',
@@ -49,7 +48,7 @@ const Testimonials = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isMobile, setIsMobile] = useState<boolean>(false);
 
-  // update isMobile on resize
+  // detect screen size
   useEffect(() => {
     const check = () => setIsMobile(window.matchMedia('(max-width: 767px)').matches);
     check();
@@ -57,18 +56,17 @@ const Testimonials = () => {
     return () => window.removeEventListener('resize', check);
   }, []);
 
-  // advance index
+  // auto slide
   useEffect(() => {
     const step = isMobile ? 1 : 2;
     const interval = setInterval(() => {
       setCurrentIndex((prev) => (prev + step) % testimonials.length);
-    }, 4000);
+    }, 5000);
     return () => clearInterval(interval);
   }, [isMobile]);
 
   const visibleCount = isMobile ? 1 : 2;
 
-  // get slice with wrapping
   const getVisible = () => {
     const res = [];
     for (let i = 0; i < visibleCount; i++) {
@@ -80,58 +78,68 @@ const Testimonials = () => {
   const visibleTestimonials = getVisible();
 
   return (
-    <div className="text-center py-12 overflow-hidden">
-      <p className="text-slate-100 font-bold text-4xl mb-10">
-        Here are some of our happiest clients
-      </p>
-      <div className="relative flex justify-center">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={`${currentIndex}-${visibleCount}`}
-            initial={{ x: 100, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            exit={{ x: -100, opacity: 0 }}
-            transition={{ duration: 0.6 }}
-            className={`flex gap-8 justify-center ${
-              isMobile ? 'flex-col items-center' : 'flex-row items-start'
-            }`}
-          >
-            {visibleTestimonials.map((t, i) => (
-              <div
-                key={i}
-                className="bg-white rounded-xl shadow-md p-4 w-[320px] md:w-[400px] text-left"
-              >
-                <div className="flex gap-4 items-center">
-                  <Image
-                    src={t.image}
-                    alt={t.name}
-                    width={70}
-                    height={70}
-                    className="w-[70px] h-[70px] rounded-full object-cover"
-                  />
+    <section className="relative bg-black text-white py-20">
+      <div className="max-w-7xl mx-auto px-6">
+        {/* Heading */}
+        <h2 className="text-3xl md:text-5xl font-bold tracking-wide uppercase text-center mb-14">
+          What Our Clients Say
+        </h2>
 
-                  <div className="flex-1">
-                    <h4 className="font-bold text-gray-800">{t.name}</h4>
-                    <p className="text-sm text-gray-600 mt-1">{t.text}</p>
-                    <div className="text-yellow-500 mt-2 flex items-center gap-1">
-                      {[...Array(5)].map((_, idx) =>
-                          t.rating > idx ? (
-                            <FaStar key={idx} className="text-yellow-500" />
-                          ) : (
-                            <FaRegStar key={idx} className="text-yellow-500 opacity-40" />
-                          )
-                        )}
-
-                      <span className="text-xs text-gray-500 ml-2">{t.rating}.0</span>
-                    </div>
+        {/* Testimonials Carousel */}
+        <div className="relative flex justify-center">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={`${currentIndex}-${visibleCount}`}
+              initial={{ x: 100, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: -100, opacity: 0 }}
+              transition={{ duration: 0.6 }}
+              className={`flex gap-8 justify-center ${
+                isMobile ? 'flex-col items-center' : 'flex-row items-start'
+              }`}
+            >
+              {visibleTestimonials.map((t, i) => (
+                <motion.div
+                  key={i}
+                  whileHover={{ scale: 1.05 }}
+                  className="bg-white/90 text-black backdrop-blur-sm border border-gray-200 
+                             rounded-2xl shadow-lg p-6 w-[320px] md:w-[380px] 
+                             transition duration-300"
+                >
+                  <div className="flex items-center gap-4 mb-4">
+                    <Image
+                      src={t.image}
+                      alt={t.name}
+                      width={70}
+                      height={70}
+                      className="w-[70px] h-[70px] rounded-full object-cover"
+                    />
+                    <h4 className="font-semibold text-lg text-gray-900">{t.name}</h4>
                   </div>
-                </div>
-              </div>
-            ))}
-          </motion.div>
-        </AnimatePresence>
+
+                  <p className="text-gray-700 text-sm md:text-base leading-relaxed mb-4">
+                    {t.text}
+                  </p>
+
+                  <div className="flex flex-col items-start">
+                    <div className="flex gap-1">
+                      {[...Array(5)].map((_, idx) =>
+                        t.rating > idx ? (
+                          <FaStar key={idx} className="text-yellow-500" />
+                        ) : (
+                          <FaRegStar key={idx} className="text-gray-400" />
+                        )
+                      )}
+                    </div>
+                    <span className="text-xs text-gray-500 mt-1">{t.rating}.0</span>
+                  </div>
+                </motion.div>
+              ))}
+            </motion.div>
+          </AnimatePresence>
+        </div>
       </div>
-    </div>
+    </section>
   );
 };
 

@@ -155,7 +155,7 @@ export default function AdminOrdersPage() {
 
   return (
     <div className="p-6 max-w-7xl mx-auto mt-20">
-      <h1 className="text-4xl font-bold mb-4 text-center text-white">
+      <h1 className="text-4xl font-bold mb-4 text-center text-black">
         🛒 Admin - Order Management & UPI Verification
       </h1>
 

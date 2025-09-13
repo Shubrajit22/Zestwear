@@ -89,9 +89,9 @@ export default function ProductGridClient({ products }: { products: Product[] })
     </div>
 
     {/* Name */}
-    <h3 className="text-sm font-semibold text-center mb-1 line-clamp-2">
-      {product.name}
-    </h3>
+    <h3 className="text-sm font-semibold text-center mb-1 overflow-hidden text-ellipsis text-black">
+  {product.name}
+</h3>
 
     {/* Rating */}
     <div className="flex justify-center mb-1">

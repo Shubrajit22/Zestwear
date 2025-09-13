@@ -5,10 +5,10 @@ const prisma = new PrismaClient();
 async function main() {
   const categories = [
     {
-      name: ProductCategoryEnum.PRAKRITI,
-      imageUrl: '/images/pakriti.png',
-      description: '100% made from bamboo T-shirts for sustainable fashion.',
-      order: 1, // optional if using order field
+      name: ProductCategoryEnum.FORMALS,
+      imageUrl: '/images/formals.png', // replace with your image path
+      description: 'Premium formal shirts and pants for office and special occasions.',
+      order: 1, // optional
     },
   ];
 
@@ -18,13 +18,13 @@ async function main() {
       update: {
         imageUrl: cat.imageUrl,
         description: cat.description,
-        order: cat.order, // include only if your schema has `order`
+        order: cat.order,
       },
       create: cat,
     });
   }
 
-  console.log('✅ Category seeded: PRAKRITI');
+  console.log('✅ Category seeded: FORMALS');
 }
 
 main()

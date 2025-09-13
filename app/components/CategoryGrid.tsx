@@ -20,7 +20,6 @@ export const CategoryGrid = () => {
       try {
         const res = await fetch('/api/products/categories');
         const data = await res.json();
-        // sort in case API doesn’t guarantee order
         const sorted = [...data].sort((a, b) => a.order - b.order);
         setCategories(sorted);
       } catch (err) {
@@ -35,40 +34,47 @@ export const CategoryGrid = () => {
 
   if (loading) {
     return (
-      <div className="p-4 text-center">
+      <div className="p-8 text-center text-gray-500">
         <p>Loading categories...</p>
       </div>
     );
   }
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-4 px-2 sm:px-4">
-      {categories.map((cat) => {
-        const categorySlug = cat.name.toLowerCase();
-        return (
-          <Link key={cat.id} href={`/categories/${categorySlug}`}>
-            <div className="cursor-pointer bg-white rounded-xl shadow hover:shadow-lg transition duration-300 overflow-hidden">
-              <div className="flex flex-col items-center p-3 sm:p-4">
-                <Image
-                  src={cat.imageUrl}
-                  alt={cat.name}
-                  width={120}
-                  height={120}
-                  className="w-[100px] h-[100px] sm:w-[120px] sm:h-[120px] object-cover rounded-md"
-                />
-                <div className="mt-3 text-center">
-                  <h2 className="text-base sm:text-lg font-semibold capitalize text-gray-800">
-                    {cat.name}
-                  </h2>
-                  <p className="mt-1 text-xs sm:text-sm text-gray-600 line-clamp-2">
-                    {cat.description}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </Link>
-        );
-      })}
+    <section className="py-16 px-4 sm:px-8 md:px-16">
+    
+
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
+        {categories.map((cat) => {
+          const categorySlug = cat.name.toLowerCase();
+          return (
+            <Link key={cat.id} href={`/categories/${categorySlug}`}>
+  <div className="group bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 cursor-pointer flex flex-col items-center p-4 h-full">
+    {/* Image */}
+    <div className="relative w-24 h-24 sm:w-28 sm:h-28 mb-3 flex-shrink-0">
+      <Image
+        src={cat.imageUrl}
+        alt={cat.name}
+        fill
+        className="object-contain group-hover:scale-105 transition-transform duration-300"
+      />
     </div>
+
+    {/* Text wrapper to push description to bottom */}
+    <div className="flex flex-col justify-between h-full w-full">
+      <h3 className="text-sm sm:text-base font-semibold text-gray-800 text-center">
+        {cat.name}
+      </h3>
+      <p className="text-xs text-gray-500 text-center mt-1 line-clamp-2">
+        {cat.description}
+      </p>
+    </div>
+  </div>
+</Link>
+
+          );
+        })}
+      </div>
+    </section>
   );
 };

@@ -1,44 +1,41 @@
-'use client';
+"use client";
 
-import React from 'react';
-import { motion } from 'framer-motion';
-import SearchBarWithResults from './search';
-import Image from 'next/image';
+import React from "react";
+import { motion } from "framer-motion";
+import Image from "next/image";
+import SearchBarWithResults from "./search";
 
 const HeroSection = () => {
   return (
-    <section
-      className="relative w-full text-white overflow-hidden pt-40 py-10"
-      style={{ minHeight: 'calc(100vh - 88px)' }}
-    >
-      <div className="max-w-[90%] md:max-w-[80%] mx-auto grid grid-cols-1 md:grid-cols-2 items-start gap-12 md:gap-20 px-4 md:px-12 relative z-0">
+    <section className="relative w-full bg-white text-black overflow-hidden">
+      <div className="max-w-[92%] md:max-w-[85%] mx-auto grid grid-cols-1 md:grid-cols-2 items-center gap-12 md:gap-20 py-20 md:py-32">
         {/* LEFT SIDE */}
-        <div className="space-y-6 text-center md:text-left">
+        <div className="space-y-10 text-center md:text-left">
           <motion.h1
             initial={{ opacity: 0, y: -40 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7 }}
-            className="text-4xl sm:text-5xl md:text-6xl font-extrabold leading-snug sm:leading-tight"
+            className="text-5xl sm:text-6xl md:text-7xl font-extrabold leading-[1.1] tracking-tight uppercase"
           >
-            <span className="bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
-              Discover Your Perfect Fit
-            </span>
+            The Future
+            <br />
+            Of Uniforms
           </motion.h1>
 
           <motion.p
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3, duration: 0.6 }}
-            className="text-gray-300 text-base sm:text-lg md:text-xl max-w-lg mx-auto md:mx-0"
+            transition={{ delay: 0.2, duration: 0.6 }}
+            className="text-gray-700 text-lg sm:text-xl max-w-md mx-auto md:mx-0 leading-relaxed"
           >
-            Find the best, reliable, and high quality uniforms here. We focus on
-            product quality. Uniforms for almost all schools—so why wait? Order now!
+            Reliable, premium-quality uniforms tailored for comfort and style.
+            From classrooms to events — your wardrobe starts here.
           </motion.p>
 
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.5, duration: 0.5 }}
+            transition={{ delay: 0.4, duration: 0.6 }}
             className="max-w-md mx-auto md:mx-0"
           >
             <SearchBarWithResults />
@@ -47,12 +44,14 @@ const HeroSection = () => {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.7, duration: 0.5 }}
+            transition={{ delay: 0.6, duration: 0.5 }}
           >
             <button
-              className="px-6 py-3 sm:px-8 sm:py-4 text-base sm:text-lg rounded-full bg-white text-black hover:bg-yellow-300 transition font-semibold shadow-lg hover:cursor-pointer"
+              className="px-10 py-3 text-lg font-semibold uppercase border border-black bg-black text-white hover:bg-white hover:text-black transition-all duration-300"
               onClick={() => {
-                document.getElementById('product-categories')?.scrollIntoView({ behavior: 'smooth' });
+                document
+                  .getElementById("product-categories")
+                  ?.scrollIntoView({ behavior: "smooth" });
               }}
             >
               Shop Now
@@ -60,25 +59,22 @@ const HeroSection = () => {
           </motion.div>
         </div>
 
-        {/* RIGHT SIDE: Image with motion */}
+        {/* RIGHT SIDE: Full Editorial Image */}
         <motion.div
-  initial={{ opacity: 0, x: 50 }}
-  animate={{ opacity: 1, x: 0 }}
-  transition={{ duration: 0.8 }}
-  whileHover={{ scale: 1.05 }}
-  className="w-full max-w-[160px] sm:max-w-[240px] md:max-w-md lg:max-w-lg mx-auto md:ml-auto pr-2 sm:pr-4 md:pr-8"
->
-  <Image
-    src="/images/customise.png"
-    alt="Customize illustration"
-    width={500}
-    height={600}
-    className="w-full h-auto object-contain drop-shadow-xl rounded-xl"
-    priority
-  />
-</motion.div>
-
-
+          initial={{ opacity: 0, x: 50 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.8 }}
+          whileHover={{ scale: 1.02 }}
+          className="w-full h-[480px] sm:h-[600px] md:h-[700px] relative"
+        >
+          <Image
+            src="/home/hero.jpg"
+            alt="Editorial Uniform"
+            fill
+            className="object-cover object-center shadow-xl"
+            priority
+          />
+        </motion.div>
       </div>
     </section>
   );
