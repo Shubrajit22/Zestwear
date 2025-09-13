@@ -39,9 +39,29 @@ const CustomizeHero = () => {
             transition={{ delay: 0.4, duration: 0.5 }}
           >
             <Link href="/Customise">
-              <button className="px-10 py-3 text-lg font-semibold uppercase border border-black bg-black text-white hover:bg-white hover:text-black transition-all duration-300">
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                className="px-10 py-3 text-lg font-semibold uppercase border border-black bg-black text-white hover:bg-white hover:text-black transition-all duration-300 flex items-center gap-3"
+              >
                 Start Customizing
-              </button>
+                {/* Animated Right Arrow */}
+                <motion.svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                  whileHover={{ x: 5 }} // moves right on hover
+                  transition={{ type: "spring", stiffness: 300 }}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M9 5l7 7-7 7"
+                  />
+                </motion.svg>
+              </motion.button>
             </Link>
           </motion.div>
         </div>

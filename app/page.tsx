@@ -75,7 +75,7 @@ export default async function Home() {
 
   {/* Most Selling Products */}
   <ScrollAnimationWrapper delay={0.6}>
-    <section className=" text-white ">
+    <section className=" text-white h-[70vh]">
       <MostSelling products={mostSellingProducts} />
     </section>
   </ScrollAnimationWrapper>

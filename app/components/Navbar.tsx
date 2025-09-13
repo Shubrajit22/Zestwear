@@ -36,7 +36,7 @@ export default function Navbar() {
   const handleLogout = async () => {
     try {
       await signOut({ redirect: false });
-      clearCart(); 
+      clearCart();
       router.push('/');
     } catch (error) {
       console.error('Logout failed:', error);
@@ -69,12 +69,12 @@ export default function Navbar() {
       <Link href={'/'}>
         <div className="flex items-center space-x-4">
           <Image src="/home/logo.png" alt="Logo" width={40} height={40} className="rounded-full" />
-          <h1 className="text-md md:text-2xl font-bold tracking-wide uppercase">Zestwear </h1>
+          <h1 className="text-md md:text-2xl font-bold tracking-wide uppercase">Zestwear</h1>
         </div>
       </Link>
 
-      {/* Desktop Search */}
-      <div className="hidden md:flex flex-grow max-w-xs sm:max-w-md mx-6 bg-gray-900 rounded-full shadow-md p-1">
+      {/* Desktop Search (only >1110px) */}
+      <div className="hidden min-[1111px]:flex flex-grow max-w-xs sm:max-w-md mx-6 bg-gray-900 rounded-full shadow-md p-1">
         <div className="w-full max-w-xl mx-auto">
           <SearchBarWithResults />
         </div>
@@ -82,8 +82,8 @@ export default function Navbar() {
 
       {/* Right section */}
       <div className="flex items-center space-x-4">
-        {/* Desktop Links */}
-        <div className="hidden md:flex space-x-6 text-lg font-semibold flex-grow justify-between mr-20">
+        {/* Desktop Links (only >1110px) */}
+        <div className="hidden min-[1111px]:flex space-x-6 text-lg font-semibold flex-grow justify-between mr-20">
           <Link href="/" className="hover:text-yellow-400 transition">Home</Link>
           <Link href="/Customise" className="hover:text-yellow-400 transition">Customize</Link>
           <Link href="/contact" className="hover:text-yellow-400 transition">Contact</Link>
@@ -143,9 +143,7 @@ export default function Navbar() {
         <div className="relative cursor-pointer" onClick={() => setIsCartOpen(true)}>
           <MdShoppingCart size={26} className="hover:text-yellow-400 transition" />
           {cartCount > 0 && (
-            <span
-              className="absolute -top-2 -right-2 text-xs bg-red-600 text-white rounded-full px-1 animate-[pop_0.3s_ease]"
-            >
+            <span className="absolute -top-2 -right-2 text-xs bg-red-600 text-white rounded-full px-1 animate-[pop_0.3s_ease]">
               {cartCount}
             </span>
           )}
@@ -154,8 +152,8 @@ export default function Navbar() {
         {/* Sliding Cart */}
         <SlidingCart isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
 
-        {/* Mobile Menu Icon */}
-        <div ref={menuRef} className="relative md:hidden">
+        {/* Menu Icon (only <=1110px) */}
+        <div ref={menuRef} className="relative block max-[1110px]:block min-[1111px]:hidden">
           <MdMoreVert
             size={26}
             className="cursor-pointer hover:text-gray-400 transition"
@@ -166,8 +164,9 @@ export default function Navbar() {
           />
 
           {isMenuOpen && (
-            <div className="fixed top-16 right-4 md:hidden w-[90vw] max-w-sm bg-black text-white rounded-lg shadow-lg border border-gray-600 z-50 p-4">
+            <div className="fixed top-16 right-4 w-[90vw] max-w-sm bg-black text-white rounded-lg shadow-lg border border-gray-600 z-50 p-4">
               <Link href="/" className="block py-2 hover:text-yellow-400 w-full" onClick={() => setMenuOpen(false)}>Home</Link>
+              <Link href="/Customise" className="block py-2 hover:text-yellow-400 w-full" onClick={() => setMenuOpen(false)}>Customize</Link>
               <Link href="/contact" className="block py-2 hover:text-yellow-400 w-full" onClick={() => setMenuOpen(false)}>Contact</Link>
               <Link href="/about" className="block py-2 hover:text-yellow-400 w-full" onClick={() => setMenuOpen(false)}>About</Link>
               <div className="mt-4 w-full flex justify-center">
