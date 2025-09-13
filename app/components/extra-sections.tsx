@@ -77,11 +77,9 @@ export const EditorialBanner = () => {
 // VIDEO STORYTELLING SECTION
 // -------------------------------
 
-
-
 export const VideoStory = () => {
   return (
-    <section className="relative w-full bg-black text-white overflow-hidden">
+    <section className="relative w-full text-white overflow-hidden">
       {/* Full-width video */}
       <div className="relative w-screen h-[50vh] min-[480px]:h-[55vh] min-[640px]:h-[65vh] min-[768px]:h-[75vh] min-[1024px]:h-[85vh] min-[1280px]:h-[90vh] left-1/2 transform -translate-x-1/2">
         <video

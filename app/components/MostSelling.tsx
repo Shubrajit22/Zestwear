@@ -80,12 +80,12 @@ export default function MostSellingSlider({ products }: { products: Product[] })
   }
 
   return (
-    <section className="w-full bg-white py-20 overflow-hidden h-[70vh]">
+    <section className="w-full bg-white py-20 overflow-hidden min-h-[85vh] md:h-[70vh] mb-8">
       <h2 className="text-4xl md:text-5xl font-bold text-center mb-20 text-black">
         Most Selling Products
       </h2>
 
-      <div className="flex justify-center gap-4 md:gap-6 flex-wrap md:flex-nowrap ">
+      <div className="flex justify-center gap-4 md:gap-6 flex-wrap md:flex-nowrap">
         {visibleProducts.map((product) => (
           <motion.div
             key={product.id}
