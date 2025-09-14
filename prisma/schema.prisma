@@ -192,6 +192,8 @@ enum ProductType {
   FORMAL
   SHIRT      
   PANTS 
+  BLAZERS
+  COAT
 }
 
 enum ProductCategoryEnum {
@@ -203,4 +205,5 @@ enum ProductCategoryEnum {
   UNIFORM
   SHOES
   FORMALS
+  BLAZERS
 }

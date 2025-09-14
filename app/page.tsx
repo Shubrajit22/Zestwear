@@ -82,7 +82,7 @@ export default async function Home() {
 
   {/* Video Storytelling */}
   <ScrollAnimationWrapper delay={1}>
-    <section className="bg-black text-white ">
+    <section className=" text-white ">
       <VideoStory />
     </section>
   </ScrollAnimationWrapper>

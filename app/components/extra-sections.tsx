@@ -119,7 +119,7 @@ export const VideoStory = () => {
             transition={{ duration: 0.8, delay: 0.4 }}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            className="px-6 py-2 min-[375px]:px-8 min-[375px]:py-2.5 min-[480px]:px-10 min-[480px]:py-3 text-sm min-[375px]:text-base min-[480px]:text-lg font-semibold uppercase border border-black bg-black text-white hover:bg-white hover:text-black transition-all duration-300"
+            className="px-6 py-2 min-[375px]:px-8 min-[375px]:py-2.5 min-[480px]:px-10 min-[480px]:py-3 text-sm min-[375px]:text-base min-[480px]:text-lg font-semibold uppercase border border-black bg-white text-black hover:border-6 transition-all duration-300"
             onClick={() => {
               document
                 .getElementById("product-categories")

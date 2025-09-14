@@ -5,10 +5,10 @@ const prisma = new PrismaClient();
 async function main() {
   const categories = [
     {
-      name: ProductCategoryEnum.FORMALS,
-      imageUrl: '/images/formals.png', // replace with your image path
-      description: 'Premium formal shirts and pants for office and special occasions.',
-      order: 1, // optional
+      name: ProductCategoryEnum.BLAZERS,
+      imageUrl: '/images/blazers.png', // replace with your image path
+      description: 'Stylish blazers and coats for formal and semi-formal occasions.',
+      order: 2, // optional (set order relative to your other categories)
     },
   ];
 
@@ -24,7 +24,7 @@ async function main() {
     });
   }
 
-  console.log('✅ Category seeded: FORMALS');
+  console.log('✅ Category seeded: BLAZERS');
 }
 
 main()
