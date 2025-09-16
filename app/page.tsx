@@ -35,12 +35,12 @@ export default async function Home() {
   }
 
   return (
-   <main className="relative w-full bg-black text-white">
+   <main className="relative w-full bg-white text-white">
   {/* Hero Section */}
   <section className="relative w-full min-h-screen flex items-center">
     <HeroSection />
   </section>
- <div className="h-0.5 sm:h-0.5"></div> {/* space after Hero */}
+<hr className="border-t border-black " />
 
   {/* Product Categories */}
   <ScrollAnimationWrapper>
@@ -49,7 +49,7 @@ export default async function Home() {
       <CategoryGrid />
     </section>
   </ScrollAnimationWrapper>
-  <div className="h-0.5 sm:h-0.5"></div> {/* space after Product Categories */}
+ 
 
   {/* Why Choose Us */}
   <ScrollAnimationWrapper delay={0.2}>
@@ -57,7 +57,7 @@ export default async function Home() {
       <WhyChooseUs />
     </section>
   </ScrollAnimationWrapper>
-  <div className="h-0.5 sm:h-0.5"></div> {/* space after Why Choose Us */}
+
 
   {/* Customize Your Product */}
   <ScrollAnimationWrapper delay={0.4}>
@@ -74,18 +74,19 @@ export default async function Home() {
   </ScrollAnimationWrapper>
 
   {/* Most Selling Products */}
-  <ScrollAnimationWrapper delay={0.6}>
-    <section className=" text-white ">
-      <MostSelling products={mostSellingProducts} />
-    </section>
-  </ScrollAnimationWrapper>
+<ScrollAnimationWrapper delay={0.6}>
+  <section className="text-white py-0"> {/* removed padding */}
+    <MostSelling products={mostSellingProducts} />
+  </section>
+</ScrollAnimationWrapper>
 
-  {/* Video Storytelling */}
-  <ScrollAnimationWrapper delay={1}>
-    <section className=" text-white ">
-      <VideoStory />
-    </section>
-  </ScrollAnimationWrapper>
+{/* Video Storytelling */}
+<ScrollAnimationWrapper delay={1}>
+  <section className="text-white py-0"> {/* removed padding */}
+    <VideoStory />
+  </section>
+</ScrollAnimationWrapper>
+
 </main>
 
   );

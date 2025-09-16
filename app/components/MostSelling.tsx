@@ -80,8 +80,9 @@ export default function MostSellingSlider({ products }: { products: Product[] })
   }
 
   return (
-    <section className="w-full bg-white py-20 overflow-hidden min-h-[85vh] md:h-[70vh] mb-8">
-      <h2 className="text-4xl md:text-5xl font-bold text-center mb-20 text-black">
+    <section className="w-full bg-white py-8 md:py-12 overflow-hidden">
+
+      <h2 className="text-4xl md:text-4xl font-bold text-center mb-20 text-black">
         Most Selling Products
       </h2>
 

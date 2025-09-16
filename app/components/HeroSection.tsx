@@ -102,7 +102,7 @@ const HeroSection = () => {
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.8 }}
           whileHover={{ scale: 1.02 }}
-          className="w-full h-[480px] sm:h-[600px] md:h-[700px] relative"
+           className="w-full h-[400px] sm:h-[500px] md:h-[600px] relative"
         >
           <motion.div
             whileHover={{ scale: 1.05 }}
@@ -113,7 +113,7 @@ const HeroSection = () => {
               src="/home/hero.jpg"
               alt="Editorial Uniform"
               fill
-              className="w-full h-full object-cover object-center"
+              className="w-[80vw] h-[80vh] object-cover object-center"
               priority
             />
 
