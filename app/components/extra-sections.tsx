@@ -2,7 +2,7 @@
 import { motion } from "framer-motion";
 import { Leaf, Truck, Sparkles, Scissors } from "lucide-react";
 import Image from "next/image";
-import { useState, useEffect } from "react";
+import { useState, useEffect,useRef } from "react";
 
 // -------------------------------
 // WHY CHOOSE US
@@ -78,27 +78,56 @@ export const EditorialBanner = () => {
 // VIDEO STORYTELLING SECTION
 // -------------------------------
 export const VideoStory = () => {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [src, setSrc] = useState("/videos/brand.mp4"); // default desktop video
 
+  useEffect(() => {
+    // Check screen width and swap video source for mobile
+    if (window.innerWidth <= 639) {
+      setSrc("/videos/brand_mobile.mp4");
+    } else {
+      setSrc("/videos/brand.mp4");
+    }
+
+    // Try to autoplay on iOS
+    const playVideo = async () => {
+      try {
+        await videoRef.current?.play();
+      } catch (err) {
+        console.warn("Autoplay failed:", err);
+      }
+    };
+
+    playVideo();
+
+    const handleResize = () => {
+      if (window.innerWidth <= 639) {
+        setSrc("/videos/brand_mobile.mp4");
+      } else {
+        setSrc("/videos/brand.mp4");
+      }
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   return (
     <section className="relative w-full text-white overflow-hidden">
       <div className="relative w-full h-[70vh] sm:h-[75vh] md:h-[80vh] lg:h-[85vh] xl:h-[90vh] 2xl:h-[95vh]">
         <video
-  className="absolute inset-0 w-full h-full object-cover object-[center_40%] sm:object-[center_30%]"
-  autoPlay
-  loop
-  muted
-  playsInline
->
-  {/* Mobile video for screens <= 639px */}
-  <source src="/videos/brand_mobile.mp4" type="video/mp4" media="(max-width: 639px)" />
-  {/* Desktop video for screens >= 640px */}
-  <source src="/videos/brand.mp4" type="video/mp4" media="(min-width: 640px)" />
-  Your browser does not support the video tag.
-</video>
+          ref={videoRef}
+          className="absolute inset-0 w-full h-full object-cover object-[center_40%] sm:object-[center_30%]"
+          autoPlay
+          loop
+          muted
+          playsInline
+        >
+          <source src={src} type="video/mp4" />
+          Your browser does not support the video tag.
+        </video>
 
-
-        {/* Dark overlay for readability */}
+        {/* Dark overlay */}
         <div className="absolute inset-0 bg-black/50 flex flex-col justify-center items-center px-4 sm:px-6 md:px-8 text-center">
           <motion.h2
             initial={{ opacity: 0, y: 30 }}
