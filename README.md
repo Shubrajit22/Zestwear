@@ -131,12 +131,5 @@ See [LICENSE](LICENSE) for more information.
 
 ---
 
-This version is **GitHub recruiter-friendly**:  
-- Has **badges** for professionalism.  
-- Includes **screenshots section** for visuals.  
-- Clear **installation steps** so others can run it.  
-- **Contribution guide** in case you want open-source collaboration.  
-- **Author & contact info** so recruiters can reach you easily.  
 
-I can also make a **GIF demo** of your site in the README so it looks even more premium when people open your repo. Would you like me to do that?
 
