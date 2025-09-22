@@ -45,7 +45,7 @@ Built with **Next.js**, **Prisma**, and **Tailwind CSS**, it delivers a seamless
 
 ### 1️⃣ Clone the Repository
 ```bash
-git clone https://github.com/arijitb17/Zestware.git
+git clone https://github.com/ZestwareIndia/website-main.git
 cd Zestware
 ````
 
